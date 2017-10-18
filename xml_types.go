@@ -1,208 +1,295 @@
 package goxsd
 
-type attrId struct {
-	Id string `xml:"id,attr"`
+type XMLCompositions struct {
+	Include    []XMLInclude    `xml:"include"`
+	Import     []XMLImport     `xml:"import"`
+	Redefine   []XMLRedefine   `xml:"redefine"`
+	Override   []XMLOverride   `xml:"override"`
+	Annotation []XMLAnnotation `xml:"annotation"`
 }
 
-type attrFixed struct {
-	Fixed bool `xml:"fixed,attr"`
+// This group is for the elements which can self-redefine
+type XMLRedefinables struct {
+	SimpleType     []XMLSimpleType     `xml:"simpleType"`
+	ComplexType    []XMLComplexType    `xml:"complexType"`
+	Group          []XMLGroup          `xml:"group"`
+	AttributeGroup []XMLAttributeGroup `xml:"attributeGroup"`
 }
 
-type attrName struct {
-	Name NCName `xml:"name,attr"`
+// This group is for the elements which occur freely at the top level of schemas.
+// All of their types are based on the "annotated" type by extension.
+type XMLSchemaTops struct {
+	XMLRedefinables
+	Element   []XMLElement   `xml:"element"`
+	Attribute []XMLAttribute `xml:"attribute"`
+	Notation  []XMLNotation  `xml:"notation"`
 }
 
-type attrBase struct {
-	Base QName `xml:"base,attr"`
+// {qualified, unqualified}
+type formChoice string
+
+// {extension, restriction}
+type reducedDerivationControl string
+
+// {#all} or (possibly empty) subset of {extension, restriction}
+type derivationSet string
+
+// {extension, restriction, list, union}
+type typeDerivationControl string
+
+// {#all} or (possibly empty) subset of {extension, restriction, list, union}
+type fullDerivationSet string
+
+type XMLSchema struct {
+	// Composition
+	Include    []XMLInclude    `xml:"include"`
+	Import     []XMLImport     `xml:"import"`
+	Redefine   []XMLRedefine   `xml:"redefine"`
+	Override   []XMLOverride   `xml:"override"`
+	Annotation []XMLAnnotation `xml:"annotation"`
+
+	DefaultOpenContent *XMLDefaultOpenContent `xml:"defaultOpenContent"`
+	Annotation         []XMLAnnotation        `xml:"annotation"`
+	XMLSchemaTops
 }
 
-type hasAnnotation struct {
-	Annotation *XmlAnnotation `xml:"annotation,omitempty"`
-}
-
-type XmlAttribute struct {
-	Default string `xml:"default,attr"`
-	Fixed   string `xml:"fixed,attr"`
-	Form    string `xml:"form,attr"`
-	attrId
-	attrName
+type XMLAttribute struct {
+	Default         string `xml:"default,attr"`
+	Fixed           string `xml:"fixed,attr"`
+	Form            string `xml:"form,attr"`
+	Id              string `xml:"id,attr"`
+	Name            NCName `xml:"name,attr"`
 	Ref             QName  `xml:"ref,attr"`
 	TargetNamespace anyURI `xml:"targetNamespace,attr"`
 	Type            QName  `xml:"type,attr"`
 	Use             string `xml:"use,attr"`
 	Inheritable     bool   `xml:"inheritable,attr"`
 
-	Annotation *XmlAnnotation `xml:"annotation,omitempty"`
-	SimpleType *XmlSimpleType `xml:"simpleType,omitempty"`
+	Annotation *XMLAnnotation `xml:"annotation"`
+	SimpleType *XMLSimpleType `xml:"simpleType"`
 }
 
-type XmlAnnotation struct {
-	attrId
+type XMLAnnotation struct {
+	Id string `xml:"id,attr"`
 
-	AppInfo       *XmlAppInfo       `xml:"appinfo"`
-	Documentation *XmlDocumentation `xml:"documentation"`
+	AppInfo       *XMLAppInfo       `xml:"appinfo"`
+	Documentation *XMLDocumentation `xml:"documentation"`
 }
 
-type XmlAppInfo struct {
+type XMLAppInfo struct {
 	Source  anyURI `xml:"source,attr"`
 	Content string `xml:",chardata"`
 }
 
-type XmlDocumentation struct {
+type XMLDocumentation struct {
 	Source  anyURI `xml:"source,attr"`
 	Content string `xml:",chardata"`
 }
 
-type XmlMinExclusive struct {
-	attrFixed
-	attrId
+type XMLMinExclusive struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
 	Value string `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlMinInclusive struct {
-	attrFixed
-	attrId
+type XMLMinInclusive struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
 	Value string `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlMaxExclusive struct {
-	attrFixed
-	attrId
+type XMLMaxExclusive struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
 	Value string `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlMaxInclusive struct {
-	attrFixed
-	attrId
+type XMLMaxInclusive struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
 	Value string `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlTotalDigits struct {
-	attrFixed
-	attrId
-	Value int `xml:"value,attr"`
+type XMLTotalDigits struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
+	Value int    `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlFractionDigits struct {
-	attrFixed
-	attrId
-	Value int `xml:"value,attr"`
+type XMLFractionDigits struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
+	Value int    `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlLength struct {
-	attrFixed
-	attrId
-	Value int `xml:"value,attr"`
+type XMLLength struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
+	Value int    `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlMinLength struct {
-	attrFixed
-	attrId
-	Value int `xml:"value,attr"`
+type XMLMinLength struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
+	Value int    `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlMaxLength struct {
-	attrFixed
-	attrId
-	Value int `xml:"value,attr"`
+type XMLMaxLength struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
+	Value int    `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlEnumeration struct {
-	attrId
+type XMLEnumeration struct {
+	Id    string `xml:"id,attr"`
 	Value string `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlWhiteSpace struct {
-	attrFixed
-	attrId
+type XMLWhiteSpace struct {
+	Fixed string `xml:"fixed,attr"`
+	Id    string `xml:"id,attr"`
 	// (collapse | preserve | replace)
 	Value string `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlPattern struct {
-	attrId
+type XMLPattern struct {
+	Id    string `xml:"id,attr"`
 	Value string `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlAssertion struct {
-	attrId
+type XMLAssertion struct {
+	Id                    string `xml:"id,attr"`
 	Test                  string `xml:"test,attr"`
 	XPathDefaultNamespace string `xml:"xpathDefaultNamespace,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlExplicitTimezone struct {
-	attrFixed
-	attrId
+type XMLExplicitTimezone struct {
+	Fixed string `xml:"fixed,attr"`
 	Value NCName `xml:"value,attr"`
 
-	hasAnnotation
+	Annotation *XMLAnnotation `xml:"annotation"`
 }
 
-type XmlSimpleType struct {
+type XMLLocalSimpleType struct {
+	XMLSimpleType
+}
+
+type XMLTopLevelSimpleType struct {
+	XMLSimpleType
 	Final string `xml:"final,attr"`
-	attrId
-	attrName
+	Name  NCName `xml:"name,attr"`
+}
 
-	hasAnnotation
+type XMLSimpleRestrictionModel struct {
+	// Annotated
+	Annotation *XMLAnnotation `xml:"annotation"`
+	Id         string         `xml:"id,attr"`
+
+	SimpleType *XMLLocalSimpleType `xml:"simpleType"`
+
+	MinExclusive     []XMLMinExclusive     `xml:"minExclusive"`
+	MinInclusive     []XMLMinInclusive     `xml:"minInclusive"`
+	MaxExclusive     []XMLMaxExclusive     `xml:"maxExclusive"`
+	MaxInclusive     []XMLMaxInclusive     `xml:"maxInclusive"`
+	TotalDigits      []XMLTotalDigits      `xml:"totalDigits"`
+	FractionDigits   []XMLFractionDigits   `xml:"fractionDigits"`
+	Length           []XMLLength           `xml:"length"`
+	MinLength        []XMLMinLength        `xml:"minLength"`
+	MaxLength        []XMLMaxLength        `xml:"maxLength"`
+	Enumeration      []XMLEnumeration      `xml:"enumeration"`
+	WhiteSpace       []XMLWhiteSpace       `xml:"whiteSpace"`
+	Pattern          []XMLPattern          `xml:"pattern"`
+	Assertion        []XMLAssertion        `xml:"assertion"`
+	ExplicitTimezone []XMLExplicitTimezone `xml:"explicitTimezone"`
+}
+
+type XMLSimpleType struct {
+	Id string `xml:"id,attr"`
+
 	Restriction *struct {
-		attrBase
-		attrId
+		Base QName  `xml:"base,attr"`
+		Id   string `xml:"id,attr"`
 
-		hasAnnotation
-		SimpleType       []XmlSimpleType       `xml:"simpleType,omitempty"`
-		MinExclusive     []XmlMinExclusive     `xml:"minExclusive,omitempty"`
-		MinInclusive     []XmlMinInclusive     `xml:"minInclusive,omitempty"`
-		MaxExclusive     []XmlMaxExclusive     `xml:"maxExclusive,omitempty"`
-		MaxInclusive     []XmlMaxInclusive     `xml:"maxInclusive,omitempty"`
-		TotalDigits      []XmlTotalDigits      `xml:"totalDigits,omitempty"`
-		FractionDigits   []XmlFractionDigits   `xml:"fractionDigits,omitempty"`
-		Length           []XmlLength           `xml:"length,omitempty"`
-		MinLength        []XmlMinLength        `xml:"minLength,omitempty"`
-		MaxLength        []XmlMaxLength        `xml:"maxLength,omitempty"`
-		Enumeration      []XmlEnumeration      `xml:"enumeration,omitempty"`
-		WhiteSpace       []XmlWhiteSpace       `xml:"whiteSpace,omitempty"`
-		Pattern          []XmlPattern          `xml:"pattern,omitempty"`
-		Assertion        []XmlAssertion        `xml:"assertion,omitempty"`
-		ExplicitTimezone []XmlExplicitTimezone `xml:"explicitTimezone,omitempty"`
-	} `xml:"restriction,omitempty"`
+		Annotation *XMLAnnotation `xml:"annotation"`
+	} `xml:"restriction"`
 	List *struct {
-		attrId
-		ItemType QName `xml:"itemType,attr"`
+		Id       string `xml:"id,attr"`
+		ItemType QName  `xml:"itemType,attr"`
 
-		hasAnnotation
-		SimpleType *XmlSimpleType `xml:"simpleType,omitempty"`
-	} `xml:"list,omitempty"`
+		Annotation *XMLAnnotation `xml:"annotation"`
+		SimpleType *XMLSimpleType `xml:"simpleType"`
+	} `xml:"list"`
 	Union *struct {
-		attrId
+		Id          string      `xml:"id,attr"`
 		MemberTypes ListOfQName `xml:"memberTypes,attr"`
 
-		hasAnnotation
-		SimpleTypes []*XmlSimpleType `xml:"simpleType,omitempty"`
-	} `xml:"union,omitempty"`
+		Annotation  *XMLAnnotation   `xml:"annotation"`
+		SimpleTypes []*XMLSimpleType `xml:"simpleType"`
+	} `xml:"union"`
+}
+
+type XMLElement struct {
+	Abstract bool `xml:"abstract,attr"`
+	// (#all | List of (extension | restriction | substitution))
+	Block     string `xml:"block,attr"`
+	Default   string `xml:"default,attr"`
+	Final     string `xml:"final,attr"`
+	Fixed     string `xml:"fixed,attr"`
+	Form      string `xml:"form,attr"`
+	Id        string `xml:"id,attr"`
+	MaxOccurs string `xml:"maxOccurs,attr"`
+	MinOccurs int    `xml:"minOccurs,attr"`
+}
+
+type XMLDefaultOpenContent struct {
+}
+
+type XMLInclude struct {
+}
+
+type XMLImport struct {
+}
+
+type XMLRedefine struct {
+}
+
+type XMLOverride struct {
+}
+
+type XMLComplexType struct {
+}
+
+type XMLGroup struct {
+}
+
+type XMLAttributeGroup struct {
+}
+
+type XMLNotation struct {
 }
