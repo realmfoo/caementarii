@@ -8,7 +8,7 @@ import (
 )
 
 func TestGenerator(t *testing.T) {
-	data, err := ioutil.ReadFile("XMLSchema.xsd")
+	data, err := ioutil.ReadFile("tests/XMLSchema.xsd")
 	if err != nil {
 		t.Fatal(err)
 	}

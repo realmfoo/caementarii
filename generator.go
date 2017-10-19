@@ -16,4 +16,6 @@ func (g *Generator) generate(s *xsd.Schema) {
 	defer w.Flush()
 
 	w.WriteString("package " + g.pkgName + "\n\n")
+	w.WriteString("import (\n")
+	w.WriteString(")\n\n")
 }
