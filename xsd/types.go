@@ -17,20 +17,6 @@ type ListOfQName []QName
 // anyURI represents an Internationalized Resource Identifier Reference (IRI).
 type anyURI string
 
-// This group is for the elements which occur freely at the top level of schemas.
-// All of their types are based on the "annotated" type by extension.
-var schemaTopGroup = make(map[xml.Name]interface{})
-
-func init() {
-	schemaTopGroup[xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "simpleType"}] = SimpleType{}
-	schemaTopGroup[xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "complexType"}] = ComplexType{}
-	schemaTopGroup[xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "group"}] = Group{}
-	schemaTopGroup[xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "attributeGroup"}] = AttributeGroup{}
-	schemaTopGroup[xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "element"}] = Element{}
-	schemaTopGroup[xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "attribute"}] = Attribute{}
-	schemaTopGroup[xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "notation"}] = Notation{}
-}
-
 // {qualified, unqualified}
 type formChoice string
 
@@ -104,6 +90,91 @@ func unmarshalCompositionGroupChoice(d *xml.Decoder, tok xml.Token) (interface{}
 			// <xs:element ref="xs:annotation"/>
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "annotation"}:
 				x := Annotation{}
+				if err = d.DecodeElement(&x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			// unexpected element
+			default:
+				return nil, tok, nil
+			}
+
+			// read next token
+			tok, err = d.Token()
+			if err != nil {
+				return r, tok, err
+			}
+
+			return r, tok, nil
+
+		case xml.EndElement:
+			return nil, tok, err
+		}
+
+		// read next token until xml.StartElement
+		tok, err = d.Token()
+		if err != nil {
+			return r, tok, err
+		}
+
+	}
+
+}
+
+func unmarshalSchemaTop(d *xml.Decoder, tok xml.Token) (interface{}, xml.Token, error) {
+	var err error
+	var r interface{}
+
+	for {
+		switch t := tok.(type) {
+		case xml.StartElement:
+			switch t.Name {
+
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "simpleType"}:
+				x := SimpleType{}
+				if err = d.DecodeElement(&x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "complexType"}:
+				x := ComplexType{}
+				if err = d.DecodeElement(&x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "group"}:
+				x := Group{}
+				if err = d.DecodeElement(&x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "attributeGroup"}:
+				x := AttributeGroup{}
+				if err = d.DecodeElement(&x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "element"}:
+				x := Element{}
+				if err = d.DecodeElement(&x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "attribute"}:
+				x := Element{}
+				if err = d.DecodeElement(&x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "notation"}:
+				x := Element{}
 				if err = d.DecodeElement(&x, &t); err != nil {
 					return nil, tok, err
 				}
@@ -225,7 +296,56 @@ func (s *Schema) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			if err != nil {
 				return err
 			}
+			start = tok.(xml.StartElement)
+
+			for {
+				if (start.Name != xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "annotation"}) {
+					break
+				}
+
+				x := Annotation{}
+				if err = d.DecodeElement(&x, &start); err != nil {
+					return err
+				}
+				s.Annotation = append(s.Annotation, x)
+
+				tok, err = skipToStartElement(d, tok)
+				if err != nil {
+					return err
+				}
+				start = tok.(xml.StartElement)
+			}
 		}
+	}
+
+	// <xs:sequence minOccurs="0" maxOccurs="unbounded">
+	//   <xs:choice>
+	//	   <xs:element ref="xs:simpleType"/>
+	//	   <xs:element ref="xs:complexType"/>
+	//	   <xs:element ref="xs:group"/>
+	//	   <xs:element ref="xs:attributeGroup"/>
+	//	   <xs:element ref="xs:element"/>
+	//	   <xs:element ref="xs:attribute"/>
+	//	   <xs:element ref="xs:notation"/>
+	//   </xs:choice>
+	//   <xs:element ref="xs:annotation" minOccurs="0" maxOccurs="unbounded"/>
+	// </xs:sequence>
+	for {
+		var x interface{}
+
+		x, tok, err = unmarshalSchemaTop(d, tok)
+		if err != nil {
+			return err
+		}
+
+		// minOccurs="0"
+		if x == nil {
+			break
+		}
+
+		s.SchemaTop = append(s.SchemaTop, x)
+
+		// maxOccurs="unbounded"
 	}
 
 	// skip all other

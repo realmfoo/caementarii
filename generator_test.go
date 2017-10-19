@@ -1,0 +1,26 @@
+package goxsd
+
+import (
+	"encoding/xml"
+	"github.com/realmfoo/caementarii/xsd"
+	"io/ioutil"
+	"testing"
+)
+
+func TestGenerator(t *testing.T) {
+	data, err := ioutil.ReadFile("XMLSchema.xsd")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s := xsd.Schema{}
+	err = xml.Unmarshal(data, &s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g := Generator{
+		pkgName: "xsd",
+	}
+	g.generate(&s)
+}
