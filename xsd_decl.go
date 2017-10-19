@@ -1,24 +1,13 @@
 package goxsd
 
-// NCName represents XML "non-colonized" Names.
-// white-space: collapse
-type NCName string
-
-// QName represents XML qualified names.
-type QName string
-
-// A list of QName
-type ListOfQName []QName
-
-// anyURI represents an Internationalized Resource Identifier Reference (IRI).
-type anyURI string
+import "github.com/realmfoo/caementarii/xsd"
 
 type attributeDecl struct {
 	// A sequence of annotation components
 	annotations []Annotation
 
 	// An xs:NCName value. Required.
-	name NCName
+	name xsd.NCName
 
 	// An xs:anyURI value. Optional.
 	targetNamespace string
