@@ -136,6 +136,23 @@ func unmarshalCompositionGroupChoice(d *xml.Decoder, tok xml.Token) (interface{}
 
 }
 
+func skipToStartElement(d *xml.Decoder, tok xml.Token) (xml.Token, error) {
+	var err error
+	for {
+		switch tok.(type) {
+		case xml.StartElement:
+			return tok, nil
+		case xml.EndElement:
+			return nil, nil
+		}
+
+		tok, err = d.Token()
+		if err != nil {
+			return nil, err
+		}
+	}
+}
+
 func (s *Schema) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	//s.Xmlns = make(map[string]string)
 	//s.XMLName = start.Name
@@ -155,6 +172,11 @@ func (s *Schema) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	//	}
 	//}
 	tok, err := d.Token()
+	if err != nil {
+		return err
+	}
+
+	tok, err = skipToStartElement(d, tok)
 	if err != nil {
 		return err
 	}
@@ -187,10 +209,24 @@ func (s *Schema) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		}
 	}
 
+	start = tok.(xml.StartElement)
+
 	// <xs:sequence minOccurs="0">
 	//   <xs:element ref="xs:defaultOpenContent"/>
 	//   <xs:element ref="xs:annotation" minOccurs="0" maxOccurs="unbounded"/>
 	// </xs:sequence>
+	{
+		if (start.Name == xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "defaultOpenContent"}) {
+			if err = d.DecodeElement(&s.DefaultOpenContent, &start); err != nil {
+				return err
+			}
+
+			tok, err = skipToStartElement(d, tok)
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	// skip all other
 Loop:
