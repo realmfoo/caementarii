@@ -18,18 +18,16 @@ func (g *Generator) generate(s *xsd.Schema) {
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 
-	schema := schema{}
+	schema := &schema{}
+	schema.targetNamespace = s.TargetNamespace
 
 	for _, top := range s.SchemaTop {
 		if node, ok := top.(xsd.Element); ok {
 			// 3.3.2.1 Common Mapping Rules for Element Declarations
-			elm := newElement(node)
+			elm := g.newElement(schema, node)
 
 			// 3.3.2.2 Mapping Rules for Top-Level Element Declarations
-			elm.name.Space = node.TargetNamespace
-			if elm.name.Space == "" {
-				elm.name.Space = s.TargetNamespace
-			}
+			elm.name.Space = s.TargetNamespace
 
 			elm.scope.variety = "global"
 
@@ -43,8 +41,38 @@ func (g *Generator) generate(s *xsd.Schema) {
 	w.WriteString(")\n\n")
 }
 
+func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.ComplexType) complexTypeDefinition {
+	typeDef := complexTypeDefinition{}
+
+	// The ·actual value· of the name [attribute].
+	typeDef.name.Local = node.Name
+	// The ·actual value· of the targetNamespace [attribute] of the <schema> ancestor element information item if present, otherwise ·absent·.
+	typeDef.name.Space = s.targetNamespace
+	// The ·actual value· of the abstract [attribute], if present, otherwise false.
+	typeDef.abstract = node.Abstract
+
+	if node.ComplexContent != nil {
+		// 3.4.2.3.1 Mapping Rules for Complex Types with Explicit Complex Content
+		//if
+		//typeDef.derivationMethod =
+
+		// 3.4.2.3.3 Mapping Rules for Content Type Property of Complex Content
+		//effectiveMixed := false
+		//if node.ComplexContent.Mixed != nil {
+		//	effectiveMixed = *node.ComplexContent.Mixed
+		//} else if node.Mixed != nil {
+		//	effectiveMixed = *node.Mixed
+		//}
+
+		//var explicitContent interface{}
+
+	}
+
+	return typeDef
+}
+
 // 3.3.2.1 Common Mapping Rules for Element Declarations
-func newElement(node xsd.Element) elementDeclaration {
+func (g *Generator) newElement(s *schema, node xsd.Element) elementDeclaration {
 	elm := elementDeclaration{}
 	// The ·actual value· of the name [attribute].
 	elm.name.Local = node.Name
@@ -55,7 +83,11 @@ func newElement(node xsd.Element) elementDeclaration {
 	// 3 The declared {type definition} of the Element Declaration ·resolved· to by the first QName in the
 	//   ·actual value· of the substitutionGroup [attribute], if present.
 	// 4 ·xs:anyType·.
-	elm.typeDefinition = nil
+	if node.ComplexType != nil {
+		elm.typeDefinition = g.newComplexType(s, node, node.ComplexType)
+	} else {
+		elm.typeDefinition = nil
+	}
 	// A Type Table corresponding to the <alternative> element information items among the [children], if any, as
 	// follows, otherwise ·absent·.
 	// elm.typeTable
