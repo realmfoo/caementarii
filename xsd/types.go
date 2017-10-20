@@ -33,6 +33,17 @@ type typeDerivationControl string
 type fullDerivationSet string
 
 type Schema struct {
+	AttributeFormDefault  string `xml:"attributeFormDefault,attr"`
+	BlockDefault          string `xml:"blockDefault,attr"`
+	DefaultAttributes     string `xml:"defaultAttributes,attr"`
+	XpathDefaultNamespace string `xml:"xpathDefaultNamespace,attr"`
+	ElementFormDefault    string `xml:"elementFormDefault,attr"`
+	FinalDefault          string `xml:"finalDefault,attr"`
+	Id                    string `xml:"id,attr"`
+	TargetNamespace       string `xml:"targetNamespace,attr"`
+	Version               string `xml:"version,attr"`
+	//xml:lang = language
+
 	Composition        []interface{}
 	DefaultOpenContent *XMLDefaultOpenContent `xml:"defaultOpenContent"`
 	Annotation         []Annotation           `xml:"annotation"`
@@ -227,21 +238,27 @@ func skipToStartElement(d *xml.Decoder, tok xml.Token) (xml.Token, error) {
 func (s *Schema) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	//s.Xmlns = make(map[string]string)
 	//s.XMLName = start.Name
-	//for _, attr := range start.Attr {
-	//	if attr.Name.Space == "xmlns" {
-	//		s.Xmlns[attr.Name.Local] = attr.Value
-	//		continue
-	//	}
-	//
-	//	switch attr.Name.Local {
-	//	case "version":
-	//		s.Version = attr.Value
-	//	case "targetNamespace":
-	//		s.TargetNamespace = attr.Value
-	//	case "elementFormDefault":
-	//		s.ElementFormDefault = attr.Value
-	//	}
-	//}
+	for _, attr := range start.Attr {
+		switch attr.Name {
+		case xml.Name{Space: "", Local: "version"}:
+			s.Version = attr.Value
+		case xml.Name{Space: "", Local: "targetNamespace"}:
+			s.TargetNamespace = attr.Value
+		case xml.Name{Space: "", Local: "elementFormDefault"}:
+			s.ElementFormDefault = attr.Value
+		case xml.Name{Space: "", Local: "blockDefault"}:
+			s.BlockDefault = attr.Value
+		case xml.Name{Space: "", Local: "defaultAttributes"}:
+			s.DefaultAttributes = attr.Value
+		case xml.Name{Space: "", Local: "xpathDefaultNamespace"}:
+			s.XpathDefaultNamespace = attr.Value
+		case xml.Name{Space: "", Local: "finalDefault"}:
+			s.FinalDefault = attr.Value
+		case xml.Name{Space: "", Local: "id"}:
+			s.Id = attr.Value
+		}
+	}
+
 	tok, err := d.Token()
 	if err != nil {
 		return err
@@ -372,7 +389,7 @@ type Attribute struct {
 	Fixed           string `xml:"fixed,attr"`
 	Form            string `xml:"form,attr"`
 	Id              string `xml:"id,attr"`
-	Name            NCName `xml:"name,attr"`
+	Name            string `xml:"name,attr"`
 	Ref             QName  `xml:"ref,attr"`
 	TargetNamespace anyURI `xml:"targetNamespace,attr"`
 	Type            QName  `xml:"type,attr"`
@@ -571,14 +588,20 @@ type SimpleType struct {
 type Element struct {
 	Abstract bool `xml:"abstract,attr"`
 	// (#all | List of (extension | restriction | substitution))
-	Block     string `xml:"block,attr"`
-	Default   string `xml:"default,attr"`
-	Final     string `xml:"final,attr"`
-	Fixed     string `xml:"fixed,attr"`
-	Form      string `xml:"form,attr"`
-	Id        string `xml:"id,attr"`
-	MaxOccurs string `xml:"maxOccurs,attr"`
-	MinOccurs int    `xml:"minOccurs,attr"`
+	Block             string `xml:"block,attr"`
+	Default           string `xml:"default,attr"`
+	Final             string `xml:"final,attr"`
+	Fixed             string `xml:"fixed,attr"`
+	Form              string `xml:"form,attr"`
+	Id                string `xml:"id,attr"`
+	MaxOccurs         string `xml:"maxOccurs,attr"`
+	MinOccurs         int    `xml:"minOccurs,attr"`
+	Name              string `xml:"name,attr"`
+	Nillable          bool   `xml:"nillable,attr"`
+	Ref               string `xml:"ref,attr"`
+	SubstitutionGroup string `xml:"substitutionGroup"`
+	TargetNamespace   string `xml:"targetNamespace,attr"`
+	Type              string `xml:"type,attr"`
 }
 
 type XMLDefaultOpenContent struct {

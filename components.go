@@ -19,15 +19,8 @@ type attributeDeclaration struct {
 		// Either a Complex Type Definition or a Attribute Group Definition. Required if {variety} is local, otherwise must be ·absent·
 		parent interface{}
 	}
-	valueConstraint struct {
-		// One of {default, fixed}. Required.
-		variety string
-		// An actual value. Required
-		value interface{}
-		// A character string. Required.
-		lexicalForm string
-	}
-	inheritable bool
+	valueConstraint valueConstraint
+	inheritable     bool
 }
 
 // Element declarations provide for:
@@ -55,14 +48,7 @@ type elementDeclaration struct {
 		// Either a Complex Type Definition or a Model Group Definition. Required if {variety} is local, otherwise must be ·absent·
 		parent interface{}
 	}
-	valueConstraint *struct {
-		// One of {default, fixed}. Required.
-		variety string
-		// An actual value. Required
-		value interface{}
-		// A character string. Required.
-		lexicalForm string
-	}
+	valueConstraint *valueConstraint
 	// An xs:boolean value. Required.
 	nillable bool
 	// A set of Identity-Constraint Definition components.
@@ -112,7 +98,7 @@ type identityConstraint struct {
 	fields []xpathExpression
 	// An Identity-Constraint Definition component. Required if {identity-constraint category} is keyref, otherwise ({identity-constraint category} is key or unique) must be ·absent·.
 	// If a value is present, its {identity-constraint category} must be key or unique.
-	referencedKey identityConstraint
+	referencedKey *identityConstraint
 }
 
 type annotation struct {
@@ -172,14 +158,7 @@ type attributeUse struct {
 	// An Attribute Declaration component. Required.
 	attributeDeclaration attributeDeclaration
 	// A Value Constraint property record. Optional.
-	valueConstraint *struct {
-		// One of {default, fixed}. Required.
-		variety string
-		// An ·actual value·. Required.
-		value interface{}
-		// A character string. Required.
-		lexicalForm string
-	}
+	valueConstraint *valueConstraint
 	// An xs:boolean value. Required.
 	inheritable bool
 }
@@ -276,4 +255,13 @@ type schema struct {
 	notationDeclarations []notationDeclaration
 	// A set of Identity-Constraint Definition components.
 	identityConstraintDefinitions []identityConstraint
+}
+
+type valueConstraint struct {
+	// One of {default, fixed}. Required.
+	variety string
+	// An actual value. Required
+	value interface{}
+	// A character string. Required.
+	lexicalForm string
 }
