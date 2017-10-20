@@ -119,7 +119,7 @@ type complexTypeDefinition struct {
 	// A Type Definition component. Required.
 	baseTypeDefinition interface{}
 	// A subset of {extension, restriction}.
-	final string
+	final []string
 	// Required if {name} is ·absent·, otherwise must be ·absent·.
 	// Either an Element Declaration or a Complex Type Definition.
 	context interface{}
@@ -148,7 +148,7 @@ type complexTypeDefinition struct {
 		simpleTypeDefinition *simpleTypeDefinition
 	}
 	// A subset of {extension, restriction}.
-	prohibitedSubstitutions string
+	prohibitedSubstitutions []string
 	// A sequence of Assertion components.
 	assertions []assertion
 }
@@ -300,6 +300,8 @@ type schema struct {
 	identityConstraintDefinitions []identityConstraint
 
 	targetNamespace string
+	blockDefault    string
+	finalDefault    string
 }
 
 type valueConstraint struct {

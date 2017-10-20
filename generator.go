@@ -51,6 +51,9 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	// The ·actual value· of the abstract [attribute], if present, otherwise false.
 	typeDef.abstract = node.Abstract
 
+	typeDef.prohibitedSubstitutions = getBlocks(node, s, typeDef)
+	typeDef.final = getFinals(node, s, typeDef)
+
 	if node.ComplexContent != nil {
 		// 3.4.2.3.1 Mapping Rules for Complex Types with Explicit Complex Content
 		//if
@@ -69,6 +72,54 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	}
 
 	return typeDef
+}
+
+func getBlocks(node *xsd.ComplexType, s *schema, typeDef complexTypeDefinition) []string {
+	blocks := make([]string, 0)
+	var effectiveBlockValue string
+	if node.Block != "" {
+		effectiveBlockValue = node.Block
+	} else if s.blockDefault != "" {
+		effectiveBlockValue = s.blockDefault
+	} else {
+		effectiveBlockValue = ""
+	}
+	if effectiveBlockValue == "#all" {
+		blocks = []string{"extension", "restriction"}
+	} else if effectiveBlockValue != "" {
+		x := strings.Split(effectiveBlockValue, " ")
+		for _, bl := range x {
+			if bl == "extension" || bl == "restriction" {
+				blocks = append(blocks, bl)
+			}
+		}
+	}
+
+	return blocks
+}
+
+func getFinals(node *xsd.ComplexType, s *schema, typeDef complexTypeDefinition) []string {
+	blocks := make([]string, 0)
+	var effectiveFinalValue string
+	if node.Final != "" {
+		effectiveFinalValue = node.Final
+	} else if s.finalDefault != "" {
+		effectiveFinalValue = s.finalDefault
+	} else {
+		effectiveFinalValue = ""
+	}
+	if effectiveFinalValue == "#all" {
+		blocks = []string{"extension", "restriction"}
+	} else if effectiveFinalValue != "" {
+		x := strings.Split(effectiveFinalValue, " ")
+		for _, bl := range x {
+			if bl == "extension" || bl == "restriction" {
+				blocks = append(blocks, bl)
+			}
+		}
+	}
+
+	return blocks
 }
 
 // 3.3.2.1 Common Mapping Rules for Element Declarations
