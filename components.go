@@ -110,6 +110,49 @@ type annotation struct {
 	attributes []xml.Attr
 }
 
+// Complex Type Definition, a kind of Type Definition
+type complexTypeDefinition struct {
+	// A sequence of Annotation components.
+	annotations []annotation
+	// A name with optional target namespace.
+	name xml.Name
+	// A Type Definition component. Required.
+	baseTypeDefinition interface{}
+	// A subset of {extension, restriction}.
+	final string
+	// Required if {name} is ·absent·, otherwise must be ·absent·.
+	// Either an Element Declaration or a Complex Type Definition.
+	context interface{}
+	// One of {extension, restriction}. Required.
+	derivationMethod string
+	// An xs:boolean value. Required.
+	abstract bool
+	// A set of Attribute Use components.
+	attributeUses []attributeUse
+	// A Wildcard component. Optional.
+	attributeWildcard wildcard
+	// A Content Type property record. Required.
+	contentType struct {
+		// One of {empty, simple, element-only, mixed}. Required.
+		variety string
+		// A Particle component. Required if {variety} is element-only or mixed, otherwise must be ·absent·.
+		particle *particle
+		// An Open Content property record. Optional if {variety} is element-only or mixed, otherwise must be ·absent·.
+		openContent *struct {
+			// One of {interleave, suffix}. Required.
+			mode string
+			// A Wildcard component. Required.
+			wildcard wildcard
+		}
+		// A Simple Type Definition component. Required if {variety} is simple, otherwise must be ·absent·.
+		simpleTypeDefinition *simpleTypeDefinition
+	}
+	// A subset of {extension, restriction}.
+	prohibitedSubstitutions string
+	// A sequence of Assertion components.
+	assertions []assertion
+}
+
 // Simple Type Definition, a kind of Type Definition
 type simpleTypeDefinition struct {
 	// A sequence of Annotation components.
@@ -255,6 +298,8 @@ type schema struct {
 	notationDeclarations []notationDeclaration
 	// A set of Identity-Constraint Definition components.
 	identityConstraintDefinitions []identityConstraint
+
+	targetNamespace string
 }
 
 type valueConstraint struct {

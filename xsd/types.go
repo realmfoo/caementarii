@@ -505,14 +505,14 @@ type XMLWhiteSpace struct {
 	Annotation *Annotation `xml:"annotation"`
 }
 
-type XMLPattern struct {
+type Pattern struct {
 	Id    string `xml:"id,attr"`
 	Value string `xml:"value,attr"`
 
 	Annotation *Annotation `xml:"annotation"`
 }
 
-type XMLAssertion struct {
+type Assert struct {
 	Id                    string `xml:"id,attr"`
 	Test                  string `xml:"test,attr"`
 	XPathDefaultNamespace string `xml:"xpathDefaultNamespace,attr"`
@@ -555,8 +555,8 @@ type XMLSimpleRestrictionModel struct {
 	MaxLength        []XMLMaxLength        `xml:"maxLength"`
 	Enumeration      []XMLEnumeration      `xml:"enumeration"`
 	WhiteSpace       []XMLWhiteSpace       `xml:"whiteSpace"`
-	Pattern          []XMLPattern          `xml:"pattern"`
-	Assertion        []XMLAssertion        `xml:"assertion"`
+	Pattern          []Pattern             `xml:"pattern"`
+	Assertion        []Assert              `xml:"assertion"`
 	ExplicitTimezone []XMLExplicitTimezone `xml:"explicitTimezone"`
 }
 
@@ -602,6 +602,41 @@ type Element struct {
 	SubstitutionGroup string `xml:"substitutionGroup"`
 	TargetNamespace   string `xml:"targetNamespace,attr"`
 	Type              string `xml:"type,attr"`
+
+	Annotation  *Annotation  `xml:"annotation"`
+	SimpleType  *SimpleType  `xml:"simpleType"`
+	ComplexType *ComplexType `xml:"complexType"`
+	Alternative *Alternative `xml:"alternative"`
+}
+
+type Alternative struct {
+	Id                    string `xml:"id,attr"`
+	Test                  string `xml:"test,attr"`
+	Type                  string `xml:"type,attr"`
+	XpathDefaultNamespace string `xml:"xpathDefaultNamespace"`
+
+	Annotation  *Annotation  `xml:"annotation"`
+	SimpleType  *SimpleType  `xml:"simpleType"`
+	ComplexType *ComplexType `xml:"complexType"`
+	Unique      []Unique     `xml:"unique"`
+	Key         []Key        `xml:"key"`
+	Keyref      []Keyref     `xml:"keyref"`
+}
+
+type Unique struct {
+	Name string `xml:"name,attr"`
+	Ref  string `xml:"ref,attr"`
+}
+
+type Key struct {
+	Name string `xml:"name,attr"`
+	Ref  string `xml:"ref,attr"`
+}
+
+type Keyref struct {
+	Name  string `xml:"name,attr"`
+	Ref   string `xml:"ref,attr"`
+	Refer string `xml:"refer,attr"`
 }
 
 type XMLDefaultOpenContent struct {
@@ -626,6 +661,69 @@ type Override struct {
 }
 
 type ComplexType struct {
+	Abstract               bool   `xml:"abstract,attr"`
+	Block                  string `xml:"block,attr"`
+	Final                  string `xml:"final,attr"`
+	Id                     string `xml:"id,attr"`
+	Mixed                  *bool  `xml:"mixed,attr"`
+	Name                   string `xml:"name,attr"`
+	DefaultAttributesApply bool   `xml:"defaultAttributesApply,attr"`
+
+	Annotation      *Annotation      `xml:"annotation"`
+	SimpleContent   *SimpleContent   `xml:"simpleContent"`
+	ComplexContent  *ComplexContent  `xml:"complexContent"`
+	Group           *Group           `xml:"group"`
+	All             *All             `xml:"all"`
+	Choice          *Choice          `xml:"choice"`
+	Sequence        *Sequence        `xml:"sequence"`
+	Attributes      []Attribute      `xml:"attribute"`
+	AttributeGroups []AttributeGroup `xml:"attributeGroup"`
+	Assert          *Assert          `xml:"assert"`
+}
+
+type Sequence struct {
+}
+
+type Choice struct {
+}
+
+type All struct {
+}
+
+type SimpleContent struct {
+}
+
+type ComplexContent struct {
+	Id    string `xml:"id,attr"`
+	Mixed *bool  `xml:"mixed,attr"`
+
+	Annotation  *Annotation `xml:"annotation"`
+	Restriction *struct {
+		Base string `xml:"base,attr"`
+		Id   string `xml:"id,attr"`
+
+		Annotation      *Annotation      `xml:"annotation"`
+		Group           *Group           `xml:"group"`
+		All             *All             `xml:"all"`
+		Choice          *Choice          `xml:"choice"`
+		Sequence        *Sequence        `xml:"sequence"`
+		Attributes      []Attribute      `xml:"attribute"`
+		AttributeGroups []AttributeGroup `xml:"attributeGroup"`
+		Assert          *Assert          `xml:"assert"`
+	} `xml:"restriction"`
+	Extension *struct {
+		Base string `xml:"base,attr"`
+		Id   string `xml:"id,attr"`
+
+		Annotation      *Annotation      `xml:"annotation"`
+		Group           *Group           `xml:"group"`
+		All             *All             `xml:"all"`
+		Choice          *Choice          `xml:"choice"`
+		Sequence        *Sequence        `xml:"sequence"`
+		Attributes      []Attribute      `xml:"attribute"`
+		AttributeGroups []AttributeGroup `xml:"attributeGroup"`
+		Assert          *Assert          `xml:"assert"`
+	} `xml:"extension"`
 }
 
 type Group struct {
