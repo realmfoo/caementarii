@@ -73,10 +73,27 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	// XML Representation of Annotation Schema Components (§3.15.2).
 	//typeDef.annotations =
 
-	if node.ComplexContent != nil {
-		// 3.4.2.3.1 Mapping Rules for Complex Types with Explicit Complex Content
-		//if
-		//typeDef.derivationMethod =
+	if node.SimpleContent != nil {
+
+	} else {
+		if node.ComplexContent != nil {
+			// 3.4.2.3.1 Mapping Rules for Complex Types with Explicit Complex Content
+
+			// The type definition ·resolved· to by the ·actual value· of the base [attribute]
+			// typeDef.baseTypeDefinition =
+
+			// If the <restriction> alternative is chosen, then restriction, otherwise (the <extension> alternative is
+			// chosen) extension.
+			if node.ComplexContent.Restriction != nil {
+				typeDef.derivationMethod = "restriction"
+			} else {
+				typeDef.derivationMethod = "extension"
+			}
+		} else {
+			// 3.4.2.3.2 Mapping Rules for Complex Types with Implicit Complex Content
+			typeDef.baseTypeDefinition = nil
+			typeDef.derivationMethod = "restriction"
+		}
 
 		// 3.4.2.3.3 Mapping Rules for Content Type Property of Complex Content
 		//effectiveMixed := false
