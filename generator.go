@@ -54,6 +54,25 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	typeDef.prohibitedSubstitutions = getBlocks(node, s, typeDef)
 	typeDef.final = getFinals(node, s, typeDef)
 
+	// If the name [attribute] is present, then ·absent·, otherwise (among the ancestor element information items there
+	// will be a nearest <element>), the Element Declaration corresponding to the nearest <element> information item
+	// among the the ancestor element information items.
+	if node.Name == "" {
+		typeDef.context = parent
+	}
+
+	// A sequence whose members are Assertions drawn from the following sources, in order:
+	// 1 The {assertions} of the {base type definition}.
+	// 2 Assertions corresponding to all the <assert> element information items among the [children] of <complexType>, <restriction> and <extension>, if any, in document order.
+	//typeDef.assertions =
+
+	// The ·annotation mapping· of the set of elements containing the <complexType>, the <openContent> [child], if
+	// present, the <attributeGroup> [children], if present, the <simpleContent> and <complexContent> [children], if
+	// present, and their <restriction> and <extension> [children], if present, and their <openContent> and
+	// <attributeGroup> [children], if present, as defined in
+	// XML Representation of Annotation Schema Components (§3.15.2).
+	//typeDef.annotations =
+
 	if node.ComplexContent != nil {
 		// 3.4.2.3.1 Mapping Rules for Complex Types with Explicit Complex Content
 		//if
