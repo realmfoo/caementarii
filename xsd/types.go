@@ -191,6 +191,13 @@ func unmarshalSchemaTop(d *xml.Decoder, tok xml.Token) (interface{}, xml.Token, 
 				}
 				r = x
 
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "annotation"}:
+				x := Annotation{}
+				if err = d.DecodeElement(&x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
 			// unexpected element
 			default:
 				return nil, tok, nil
