@@ -31,7 +31,6 @@ func (g *Generator) generate(s *xsd.Schema) {
 
 			elm.scope.variety = "global"
 
-			fmt.Printf("%+v\n", elm)
 			schema.elementDeclarations = append(schema.elementDeclarations, elm)
 		}
 	}
@@ -79,14 +78,17 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 		if node.ComplexContent != nil {
 			// 3.4.2.3.1 Mapping Rules for Complex Types with Explicit Complex Content
 
-			// The type definition ·resolved· to by the ·actual value· of the base [attribute]
-			// typeDef.baseTypeDefinition =
-
 			// If the <restriction> alternative is chosen, then restriction, otherwise (the <extension> alternative is
 			// chosen) extension.
 			if node.ComplexContent.Restriction != nil {
+				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
+				// <extension> element appearing as a child of <simpleContent>
+				typeDef.baseTypeDefinition = g.resolveType(node.ComplexContent.Restriction.Base)
 				typeDef.derivationMethod = "restriction"
 			} else {
+				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
+				// <extension> element appearing as a child of <simpleContent>
+				typeDef.baseTypeDefinition = g.resolveType(node.ComplexContent.Extension.Base)
 				typeDef.derivationMethod = "extension"
 			}
 		} else {
@@ -108,6 +110,11 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	}
 
 	return typeDef
+}
+
+func (g *Generator) resolveType(t string) interface{} {
+	fmt.Println(t)
+	return nil
 }
 
 func getBlocks(node *xsd.ComplexType, s *schema, typeDef complexTypeDefinition) []string {
@@ -172,6 +179,10 @@ func (g *Generator) newElement(s *schema, node xsd.Element) elementDeclaration {
 	// 4 ·xs:anyType·.
 	if node.ComplexType != nil {
 		elm.typeDefinition = g.newComplexType(s, node, node.ComplexType)
+	} else if node.SimpleType != nil {
+
+	} else if node.Type != "" {
+		elm.typeDefinition = g.resolveType(node.Type)
 	} else {
 		elm.typeDefinition = nil
 	}
