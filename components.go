@@ -1,6 +1,9 @@
 package goxsd
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"strings"
+)
 
 // Attribute declarations provide for:
 //
@@ -282,6 +285,8 @@ type notationDeclaration struct {
 
 // At the abstract level, the schema itself is just a container for its components.
 type schema struct {
+	prefixMap map[string]string
+
 	// A sequence of Annotation components.
 	annotations []annotation
 	// A set of Type Definition components.
@@ -302,6 +307,18 @@ type schema struct {
 	targetNamespace string
 	blockDefault    string
 	finalDefault    string
+}
+
+// resolveQName resolves a QName value into xml.Name struct
+func (s *schema) resolveQName(qname string) (name xml.Name) {
+	p := strings.SplitN(qname, ":", 2)
+	if len(p) == 1 {
+		name.Local = p[0]
+	} else {
+		name.Space = s.prefixMap[p[0]]
+		name.Local = p[1]
+	}
+	return
 }
 
 type valueConstraint struct {

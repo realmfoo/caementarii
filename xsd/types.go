@@ -33,6 +33,8 @@ type typeDerivationControl string
 type fullDerivationSet string
 
 type Schema struct {
+	XMLAttrs []xml.Attr `xml:"-"`
+
 	AttributeFormDefault  string `xml:"attributeFormDefault,attr"`
 	BlockDefault          string `xml:"blockDefault,attr"`
 	DefaultAttributes     string `xml:"defaultAttributes,attr"`
@@ -263,6 +265,8 @@ func (s *Schema) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			s.FinalDefault = attr.Value
 		case xml.Name{Space: "", Local: "id"}:
 			s.Id = attr.Value
+		default:
+			s.XMLAttrs = append(s.XMLAttrs, attr)
 		}
 	}
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"encoding/xml"
 )
 
 type Generator struct {
@@ -20,6 +21,12 @@ func (g *Generator) generate(s *xsd.Schema) {
 
 	schema := &schema{}
 	schema.targetNamespace = s.TargetNamespace
+	schema.prefixMap = make(map[string]string, 0)
+	for _, attr := range s.XMLAttrs {
+		if attr.Name.Space == "xmlns" {
+			schema.prefixMap[attr.Name.Local] = attr.Value
+		}
+	}
 
 	for _, top := range s.SchemaTop {
 		if node, ok := top.(xsd.Element); ok {
@@ -83,12 +90,12 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 			if node.ComplexContent.Restriction != nil {
 				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 				// <extension> element appearing as a child of <simpleContent>
-				typeDef.baseTypeDefinition = g.resolveType(node.ComplexContent.Restriction.Base)
+				typeDef.baseTypeDefinition = g.resolveType(s.resolveQName(node.ComplexContent.Restriction.Base))
 				typeDef.derivationMethod = "restriction"
 			} else {
 				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 				// <extension> element appearing as a child of <simpleContent>
-				typeDef.baseTypeDefinition = g.resolveType(node.ComplexContent.Extension.Base)
+				typeDef.baseTypeDefinition = g.resolveType(s.resolveQName(node.ComplexContent.Extension.Base))
 				typeDef.derivationMethod = "extension"
 			}
 		} else {
@@ -112,8 +119,9 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	return typeDef
 }
 
-func (g *Generator) resolveType(t string) interface{} {
-	fmt.Println(t)
+// resolveType resolves a qname into Type Definition
+func (g *Generator) resolveType(name xml.Name) interface{} {
+	fmt.Println(name)
 	return nil
 }
 
@@ -182,7 +190,7 @@ func (g *Generator) newElement(s *schema, node xsd.Element) elementDeclaration {
 	} else if node.SimpleType != nil {
 
 	} else if node.Type != "" {
-		elm.typeDefinition = g.resolveType(node.Type)
+		elm.typeDefinition = g.resolveType(s.resolveQName(node.Type))
 	} else {
 		elm.typeDefinition = nil
 	}
