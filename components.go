@@ -3,6 +3,7 @@ package goxsd
 import (
 	"encoding/xml"
 	"strings"
+	"github.com/realmfoo/caementarii/xsd"
 )
 
 // Attribute declarations provide for:
@@ -285,16 +286,14 @@ type notationDeclaration struct {
 
 // At the abstract level, the schema itself is just a container for its components.
 type schema struct {
-	prefixMap map[string]string
-
 	// A sequence of Annotation components.
 	annotations []annotation
 	// A set of Type Definition components.
-	typeDefinitions []interface{}
+	typeDefinitions map[xml.Name]interface{}
 	// A set of Attribute Declaration components.
 	attributeDeclarations []attributeDeclaration
 	// A set of Element Declaration components.
-	elementDeclarations []elementDeclaration
+	elementDeclarations map[xml.Name]elementDeclaration
 	// A set of Attribute Group Definition components.
 	attributeGroupDefinitions []attributeGroupDefinition
 	// A set of Model Group Definition components.
@@ -304,9 +303,28 @@ type schema struct {
 	// A set of Identity-Constraint Definition components.
 	identityConstraintDefinitions []identityConstraint
 
+	xsdSchema *xsd.Schema
+	// A map of known namespaces
+	prefixMap map[string]string
 	targetNamespace string
 	blockDefault    string
 	finalDefault    string
+}
+
+func newSchema(s *xsd.Schema) *schema {
+	prefixMap := make(map[string]string, 0)
+	for _, attr := range s.XMLAttrs {
+		if attr.Name.Space == "xmlns" {
+			prefixMap[attr.Name.Local] = attr.Value
+		}
+	}
+	return &schema{
+		xsdSchema:           s,
+		targetNamespace:     s.TargetNamespace,
+		prefixMap:           prefixMap,
+		typeDefinitions:     make(map[xml.Name]interface{}, 0),
+		elementDeclarations: make(map[xml.Name]elementDeclaration, 0),
+	}
 }
 
 // resolveQName resolves a QName value into xml.Name struct

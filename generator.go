@@ -19,14 +19,7 @@ func (g *Generator) generate(s *xsd.Schema) {
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 
-	schema := &schema{}
-	schema.targetNamespace = s.TargetNamespace
-	schema.prefixMap = make(map[string]string, 0)
-	for _, attr := range s.XMLAttrs {
-		if attr.Name.Space == "xmlns" {
-			schema.prefixMap[attr.Name.Local] = attr.Value
-		}
-	}
+	schema := newSchema(s)
 
 	for _, top := range s.SchemaTop {
 		if node, ok := top.(xsd.Element); ok {
@@ -38,7 +31,7 @@ func (g *Generator) generate(s *xsd.Schema) {
 
 			elm.scope.variety = "global"
 
-			schema.elementDeclarations = append(schema.elementDeclarations, elm)
+			schema.elementDeclarations[elm.name] = elm
 		}
 	}
 
@@ -54,6 +47,9 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	typeDef.name.Local = node.Name
 	// The ·actual value· of the targetNamespace [attribute] of the <schema> ancestor element information item if present, otherwise ·absent·.
 	typeDef.name.Space = s.targetNamespace
+
+	s.typeDefinitions[typeDef.name] = &typeDef
+
 	// The ·actual value· of the abstract [attribute], if present, otherwise false.
 	typeDef.abstract = node.Abstract
 
@@ -90,12 +86,12 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 			if node.ComplexContent.Restriction != nil {
 				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 				// <extension> element appearing as a child of <simpleContent>
-				typeDef.baseTypeDefinition = g.resolveType(s.resolveQName(node.ComplexContent.Restriction.Base))
+				typeDef.baseTypeDefinition = g.resolveType(s, s.resolveQName(node.ComplexContent.Restriction.Base))
 				typeDef.derivationMethod = "restriction"
 			} else {
 				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 				// <extension> element appearing as a child of <simpleContent>
-				typeDef.baseTypeDefinition = g.resolveType(s.resolveQName(node.ComplexContent.Extension.Base))
+				typeDef.baseTypeDefinition = g.resolveType(s, s.resolveQName(node.ComplexContent.Extension.Base))
 				typeDef.derivationMethod = "extension"
 			}
 		} else {
@@ -120,8 +116,28 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 }
 
 // resolveType resolves a qname into Type Definition
-func (g *Generator) resolveType(name xml.Name) interface{} {
-	fmt.Println(name)
+func (g *Generator) resolveType(s *schema, name xml.Name) interface{} {
+	// Check if type is already parsed
+	if typeDef, ok := s.typeDefinitions[name]; ok {
+		fmt.Println("Found cache", name)
+		return typeDef
+	}
+
+	// Find and parse type definition
+	fmt.Println("Finding", name)
+	if s.targetNamespace == s.targetNamespace {
+		for _, top := range s.xsdSchema.SchemaTop {
+			switch t := top.(type) {
+			case xsd.SimpleType:
+				//
+			case xsd.ComplexType:
+				if t.Name == name.Local {
+					return g.newComplexType(s, nil, &t)
+				}
+			}
+		}
+	}
+	fmt.Println("Not found", name)
 	return nil
 }
 
@@ -190,7 +206,7 @@ func (g *Generator) newElement(s *schema, node xsd.Element) elementDeclaration {
 	} else if node.SimpleType != nil {
 
 	} else if node.Type != "" {
-		elm.typeDefinition = g.resolveType(s.resolveQName(node.Type))
+		elm.typeDefinition = g.resolveType(s, s.resolveQName(node.Type))
 	} else {
 		elm.typeDefinition = nil
 	}
