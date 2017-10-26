@@ -2,12 +2,12 @@ package goxsd
 
 import (
 	"bufio"
+	"encoding/xml"
 	"fmt"
 	"github.com/realmfoo/caementarii/xsd"
 	"os"
 	"regexp"
 	"strings"
-	"encoding/xml"
 )
 
 type Generator struct {
@@ -76,7 +76,22 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	//typeDef.annotations =
 
 	if node.SimpleContent != nil {
+		// If the <restriction> alternative is chosen, then restriction, otherwise (the <extension> alternative is
+		// chosen) extension.
+		if node.SimpleContent.Restriction != nil {
+			// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
+			// <extension> element appearing as a child of <simpleContent>
+			typeDef.baseTypeDefinition = g.resolveType(s, s.resolveQName(node.SimpleContent.Restriction.Base))
+			typeDef.derivationMethod = "restriction"
+		} else {
+			// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
+			// <extension> element appearing as a child of <simpleContent>
+			typeDef.baseTypeDefinition = g.resolveType(s, s.resolveQName(node.SimpleContent.Extension.Base))
+			typeDef.derivationMethod = "extension"
+		}
 
+		typeDef.contentType.variety = "simple"
+		typeDef.contentType.simpleTypeDefinition = nil
 	} else {
 		if node.ComplexContent != nil {
 			// 3.4.2.3.1 Mapping Rules for Complex Types with Explicit Complex Content

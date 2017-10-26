@@ -76,7 +76,7 @@ func unmarshalCompositionGroupChoice(d *xml.Decoder, tok xml.Token) (interface{}
 				}
 				r = x
 
-			// <xs:element ref="xs:import"/>
+				// <xs:element ref="xs:import"/>
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "import"}:
 				x := Import{}
 				if err = d.DecodeElement(&x, &t); err != nil {
@@ -84,7 +84,7 @@ func unmarshalCompositionGroupChoice(d *xml.Decoder, tok xml.Token) (interface{}
 				}
 				r = x
 
-			// <xs:element ref="xs:redefine"/>
+				// <xs:element ref="xs:redefine"/>
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "redefine"}:
 				x := Redefine{}
 				if err = d.DecodeElement(&x, &t); err != nil {
@@ -92,7 +92,7 @@ func unmarshalCompositionGroupChoice(d *xml.Decoder, tok xml.Token) (interface{}
 				}
 				r = x
 
-			// <xs:element ref="xs:override"/>
+				// <xs:element ref="xs:override"/>
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "override"}:
 				x := Override{}
 				if err = d.DecodeElement(&x, &t); err != nil {
@@ -100,7 +100,7 @@ func unmarshalCompositionGroupChoice(d *xml.Decoder, tok xml.Token) (interface{}
 				}
 				r = x
 
-			// <xs:element ref="xs:annotation"/>
+				// <xs:element ref="xs:annotation"/>
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "annotation"}:
 				x := Annotation{}
 				if err = d.DecodeElement(&x, &t); err != nil {
@@ -108,7 +108,7 @@ func unmarshalCompositionGroupChoice(d *xml.Decoder, tok xml.Token) (interface{}
 				}
 				r = x
 
-			// unexpected element
+				// unexpected element
 			default:
 				return nil, tok, nil
 			}
@@ -200,7 +200,7 @@ func unmarshalSchemaTop(d *xml.Decoder, tok xml.Token) (interface{}, xml.Token, 
 				}
 				r = x
 
-			// unexpected element
+				// unexpected element
 			default:
 				return nil, tok, nil
 			}
@@ -702,6 +702,33 @@ type All struct {
 }
 
 type SimpleContent struct {
+	Id string `xml:"id,attr"`
+
+	Annotation  *Annotation `xml:"annotation"`
+	Restriction *struct {
+		Base string `xml:"base,attr"`
+		Id   string `xml:"id,attr"`
+
+		Annotation      *Annotation      `xml:"annotation"`
+		SimpleType      *SimpleType      `xml:"simpleType"`
+		FacetOrAny      []interface{}    `xml:"-"`
+		Choice          *Choice          `xml:"choice"`
+		Sequence        *Sequence        `xml:"sequence"`
+		Attributes      []Attribute      `xml:"attribute"`
+		AttributeGroups []AttributeGroup `xml:"attributeGroup"`
+		AnyAtttribute   *AnyAttribute    `xml:"anyAttribute"`
+		Assert          *Assert          `xml:"assert"`
+	} `xml:"restriction"`
+	Extension *struct {
+		Base string `xml:"base,attr"`
+		Id   string `xml:"id,attr"`
+
+		Annotation      *Annotation      `xml:"annotation"`
+		Attributes      []Attribute      `xml:"attribute"`
+		AttributeGroups []AttributeGroup `xml:"attributeGroup"`
+		AnyAtttribute   *AnyAttribute    `xml:"anyAttribute"`
+		Assert          *Assert          `xml:"assert"`
+	} `xml:"extension"`
 }
 
 type ComplexContent struct {
@@ -735,6 +762,16 @@ type ComplexContent struct {
 		AttributeGroups []AttributeGroup `xml:"attributeGroup"`
 		Assert          *Assert          `xml:"assert"`
 	} `xml:"extension"`
+}
+
+type AnyAttribute struct {
+	Id               string `xml:"id,attr"`
+	Namespace        string `xml:"namespace,attr"`
+	NotNamespace     string `xml:"notNamespace,attr"`
+	NotQName         string `xml:"notQName,attr"`
+	ProcessConttents string `xml:"processContents,attr"`
+
+	Annotation *Annotation `xml:"annotation"`
 }
 
 type Group struct {
