@@ -2,8 +2,8 @@ package goxsd
 
 import (
 	"encoding/xml"
-	"strings"
 	"github.com/realmfoo/caementarii/xsd"
+	"strings"
 )
 
 // Attribute declarations provide for:
@@ -305,7 +305,7 @@ type schema struct {
 
 	xsdSchema *xsd.Schema
 	// A map of known namespaces
-	prefixMap map[string]string
+	prefixMap       map[string]string
 	targetNamespace string
 	blockDefault    string
 	finalDefault    string
@@ -347,3 +347,5 @@ type valueConstraint struct {
 	// A character string. Required.
 	lexicalForm string
 }
+
+var anySimpleType = &simpleTypeDefinition{}

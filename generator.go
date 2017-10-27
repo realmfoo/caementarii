@@ -91,7 +91,51 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 		}
 
 		typeDef.contentType.variety = "simple"
-		typeDef.contentType.simpleTypeDefinition = nil
+
+		if baseDef, ok := typeDef.baseTypeDefinition.(*complexTypeDefinition); ok {
+			if baseDef.contentType.variety == "simple" {
+				if baseDef.derivationMethod == "restriction" {
+					// 1 If the {base type definition} is a complex type definition whose own {content type} has
+					// {variety} simple and the <restriction> alternative is chosen, then let B be:
+					//
+					// 1.1 the simple type definition corresponding to the <simpleType> among the [children] of
+					//     <restriction> if there is one;
+					// 1.2 otherwise (<restriction> has no <simpleType> among its [children]), the simple type
+					//     definition which is the {simple type definition} of the {content type} of the
+					//     {base type definition}
+					//
+					// a simple type definition as follows:
+				} else {
+					// 3 If the {base type definition} is a complex type definition whose own {content type} has
+					// {variety} simple and the <extension> alternative is chosen, then the {simple type definition} of
+					// the {content type} of that complex type definition;
+					typeDef.contentType.simpleTypeDefinition = baseDef.contentType.simpleTypeDefinition
+				}
+			} else if baseDef.contentType.variety == "mixed" {
+				// 2 If the {base type definition} is a complex type definition whose own {content type} has {variety}
+				// mixed and {particle} a Particle which is ·emptiable·, as defined in Particle Emptiable (§3.9.6.3) and
+				// the <restriction> alternative is chosen, then (let SB be the simple type definition corresponding to
+				// the <simpleType> among the [children] of <restriction> if any, otherwise ·xs:anySimpleType·) a simple
+				// type definition which restricts SB with a set of facet components corresponding to the appropriate
+				// element information items among the <restriction>'s [children] (i.e. those which specify facets,
+				// if any), as defined in Simple Type Restriction (Facets) (§3.16.6.4);
+				//
+				// Note: If there is no <simpleType> among the [children] of <restriction> (and if therefore SB is
+				// ·xs:anySimpleType·), the result will be a simple type definition component which fails to obey the
+				// constraints on simple type definitions, including for example clause 1.1 of Derivation Valid
+				// (Restriction, Simple) (§3.16.6.2).
+			}
+		}
+		if baseDef, ok := typeDef.baseTypeDefinition.(*simpleTypeDefinition); ok {
+			// 4 If the {base type definition} is a simple type definition and the <extension> alternative is chosen,
+			// then that simple type definition;
+			if typeDef.derivationMethod == "extension" {
+				typeDef.contentType.simpleTypeDefinition = baseDef
+			}
+		}
+		if typeDef.contentType.simpleTypeDefinition == nil {
+			typeDef.contentType.simpleTypeDefinition = anySimpleType
+		}
 	} else {
 		if node.ComplexContent != nil {
 			// 3.4.2.3.1 Mapping Rules for Complex Types with Explicit Complex Content
