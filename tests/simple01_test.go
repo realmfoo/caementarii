@@ -1,14 +1,15 @@
-package goxsd
+package tests
 
 import (
 	"encoding/xml"
+	"github.com/realmfoo/caementarii"
 	"github.com/realmfoo/caementarii/xsd"
 	"io/ioutil"
 	"testing"
 )
 
-func TestGenerator(t *testing.T) {
-	data, err := ioutil.ReadFile("tests/XMLSchema.xsd")
+func TestSimple01(t *testing.T) {
+	data, err := ioutil.ReadFile("simple01.xsd")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -19,8 +20,9 @@ func TestGenerator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	g := Generator{
+	g := goxsd.Generator{
 		PkgName: "xsd",
 	}
 	g.Generate(&s)
+
 }

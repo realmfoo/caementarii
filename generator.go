@@ -11,10 +11,10 @@ import (
 )
 
 type Generator struct {
-	pkgName string
+	PkgName string
 }
 
-func (g *Generator) generate(s *xsd.Schema) {
+func (g *Generator) Generate(s *xsd.Schema) {
 
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
@@ -35,7 +35,7 @@ func (g *Generator) generate(s *xsd.Schema) {
 		}
 	}
 
-	w.WriteString("package " + g.pkgName + "\n\n")
+	w.WriteString("package " + g.PkgName + "\n\n")
 	w.WriteString("import (\n")
 	w.WriteString(")\n\n")
 }
@@ -176,6 +176,11 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 
 // resolveType resolves a qname into Type Definition
 func (g *Generator) resolveType(s *schema, name xml.Name) interface{} {
+	// Check if type is a built-in type
+	if typeDef, ok := xmlTypes[name]; ok {
+		return typeDef
+	}
+
 	// Check if type is already parsed
 	if typeDef, ok := s.typeDefinitions[name]; ok {
 		fmt.Println("Found cache", name)

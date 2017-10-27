@@ -136,25 +136,29 @@ type complexTypeDefinition struct {
 	// A Wildcard component. Optional.
 	attributeWildcard wildcard
 	// A Content Type property record. Required.
-	contentType struct {
-		// One of {empty, simple, element-only, mixed}. Required.
-		variety string
-		// A Particle component. Required if {variety} is element-only or mixed, otherwise must be ·absent·.
-		particle *particle
-		// An Open Content property record. Optional if {variety} is element-only or mixed, otherwise must be ·absent·.
-		openContent *struct {
-			// One of {interleave, suffix}. Required.
-			mode string
-			// A Wildcard component. Required.
-			wildcard wildcard
-		}
-		// A Simple Type Definition component. Required if {variety} is simple, otherwise must be ·absent·.
-		simpleTypeDefinition *simpleTypeDefinition
-	}
+	contentType complexTypeContentType
 	// A subset of {extension, restriction}.
 	prohibitedSubstitutions []string
 	// A sequence of Assertion components.
 	assertions []assertion
+}
+
+type complexTypeContentType struct {
+	// One of {empty, simple, element-only, mixed}. Required.
+	variety string
+	// A Particle component. Required if {variety} is element-only or mixed, otherwise must be ·absent·.
+	particle *particle
+	// An Open Content property record. Optional if {variety} is element-only or mixed, otherwise must be ·absent·.
+	openContent *openContent
+	// A Simple Type Definition component. Required if {variety} is simple, otherwise must be ·absent·.
+	simpleTypeDefinition *simpleTypeDefinition
+}
+
+type openContent struct {
+	// One of {interleave, suffix}. Required.
+	mode string
+	// A Wildcard component. Required.
+	wildcard wildcard
 }
 
 // Simple Type Definition, a kind of Type Definition
@@ -164,7 +168,7 @@ type simpleTypeDefinition struct {
 	// A name with optional target namespace.
 	name xml.Name
 	// A subset of {extension, restriction, list, union}.
-	final string
+	final []string
 	// Required if {name} is ·absent·, otherwise must be ·absent·.
 	// Either an Attribute Declaration, an Element Declaration, a Complex Type Definition, or a Simple Type Definition.
 	context interface{}
@@ -228,16 +232,18 @@ type wildcard struct {
 	// A sequence of Annotation components.
 	annotations []annotation
 	// A Namespace Constraint property record. Required.
-	namespaceConstraint struct {
-		// One of {any, enumeration, not}. Required.
-		variety string
-		// A set each of whose members is either an xs:anyURI value or the distinguished value ·absent·. Required.
-		namespaces []string
-		// A set each of whose members is either an xs:QName value or the keyword defined or the keyword sibling. Required.
-		disallowedNames []string
-	}
+	namespaceConstraint wildcardNamespaceConstraint
 	// One of {skip, strict, lax}. Required.
 	processContents string
+}
+
+type wildcardNamespaceConstraint struct {
+	// One of {any, enumeration, not}. Required.
+	variety string
+	// A set each of whose members is either an xs:anyURI value or the distinguished value ·absent·. Required.
+	namespaces []string
+	// A set each of whose members is either an xs:QName value or the keyword defined or the keyword sibling. Required.
+	disallowedNames []string
 }
 
 // A model group definition associates a name and optional annotations with a Model Group. By reference to the name, the entire model group can be incorporated by reference into a {term}.
@@ -348,4 +354,21 @@ type valueConstraint struct {
 	lexicalForm string
 }
 
-var anySimpleType = &simpleTypeDefinition{}
+type whiteSpaceFacet struct {
+	// A sequence of Annotation components.
+	annotations []annotation
+	// One of {preserve, replace, collapse}. Required.
+	value string
+	// An xs:boolean value. Required.
+	fixed bool
+}
+
+// One of {false, partial, total}. Required.
+type orderedFacet string
+
+type boundedFacet bool
+
+// One of {finite, countably infinite}.
+type cardinalityFacet string
+
+type numericFacet bool
