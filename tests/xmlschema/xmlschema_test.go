@@ -1,4 +1,4 @@
-package tests
+package xmlschema
 
 import (
 	"encoding/xml"

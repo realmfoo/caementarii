@@ -20,7 +20,7 @@ func TestGenerator(t *testing.T) {
 	}
 
 	g := Generator{
-		PkgName: "xsd",
+		PkgName: "xmlschema",
 	}
 	g.Generate(&s)
 }

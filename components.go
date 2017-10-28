@@ -200,7 +200,9 @@ type assertion struct {
 	test xpathExpression
 }
 
-// An attribute use is a utility component which controls the occurrence and defaulting behavior of attribute declarations. It plays the same role for attribute declarations in complex types that particles play for element declarations.
+// An attribute use is a utility component which controls the occurrence and defaulting behavior of attribute
+// declarations. It plays the same role for attribute declarations in complex types that particles play for element
+// declarations.
 type attributeUse struct {
 	// A sequence of Annotation components.
 	annotations []annotation

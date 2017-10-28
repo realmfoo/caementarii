@@ -37,7 +37,17 @@ func (g *Generator) Generate(s *xsd.Schema) {
 
 	w.WriteString("package " + g.PkgName + "\n\n")
 	w.WriteString("import (\n")
-	w.WriteString(")\n\n")
+	w.WriteString(`	"encoding/xml"` + "\n")
+	w.WriteString(")\n")
+
+	for _, elm := range schema.elementDeclarations {
+		w.WriteString("\n")
+		w.WriteString(`type ` + strings.Title(elm.name.Local) + ` struct {` + "\n")
+		if elm.name.Space != "" {
+			w.WriteString(`	XMLName xml.Name ` + "`" + `xml:"` + elm.name.Space + ` ` + elm.name.Local + `"` + "`\n")
+		}
+		w.WriteString("}\n")
+	}
 }
 
 func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.ComplexType) complexTypeDefinition {
