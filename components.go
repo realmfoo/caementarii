@@ -3,8 +3,11 @@ package goxsd
 import (
 	"encoding/xml"
 	"github.com/realmfoo/caementarii/xsd"
+	"math"
 	"strings"
 )
+
+var unbound = math.MaxInt32
 
 // Attribute declarations provide for:
 //

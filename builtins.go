@@ -2,7 +2,6 @@ package goxsd
 
 import (
 	"encoding/xml"
-	"math"
 )
 
 const xmlNs = "http://www.w3.org/2001/XMLSchema"
@@ -76,21 +75,29 @@ var anyAtomicType = &simpleTypeDefinition{
 	annotations:        []annotation{},
 }
 
-var stringPrimitive = &simpleTypeDefinition{
-	name:               xml.Name{Space: xmlNs, Local: "string"},
-	baseTypeDefinition: anyAtomicType,
-	final:              []string{},
-	variety:            "atomic",
-	facets: []interface{}{
+var stringPrimitive = newPrimitive(
+	"string",
+	[]interface{}{
 		whiteSpaceFacet{value: "preserve", fixed: false},
 	},
-	fundamentalFacets: []interface{}{
+	[]interface{}{
 		orderedFacet("false"),
 		boundedFacet(false),
 		cardinalityFacet("countably infinite"),
 		numericFacet(false),
 	},
-	annotations: []annotation{},
-}
+)
 
-var unbound = math.MaxInt32
+func newPrimitive(name string, facets []interface{}, fundamentalFacets []interface{}) *simpleTypeDefinition {
+	t := &simpleTypeDefinition{
+		name:               xml.Name{Space: xmlNs, Local: name},
+		baseTypeDefinition: anyAtomicType,
+		final:              []string{},
+		variety:            "atomic",
+		facets:             facets,
+		fundamentalFacets:  fundamentalFacets,
+		annotations:        []annotation{},
+	}
+	t.primitiveTypeDefinition = t
+	return t
+}
