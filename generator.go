@@ -45,6 +45,9 @@ func (g *Generator) Generate(s *xsd.Schema) {
 		w.WriteString(`type ` + strings.Title(elm.name.Local) + ` struct {` + "\n")
 		if elm.name.Space != "" {
 			w.WriteString(`	XMLName xml.Name ` + "`" + `xml:"` + elm.name.Space + ` ` + elm.name.Local + `"` + "`\n")
+			if typeDef, ok := elm.typeDefinition.(*simpleTypeDefinition); ok {
+				w.WriteString(`    Value ` + typeDef.primitiveTypeDefinition.goType + " `xml:\",chardata\"`\n")
+			}
 		}
 		w.WriteString("}\n")
 	}

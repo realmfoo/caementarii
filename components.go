@@ -194,6 +194,9 @@ type simpleTypeDefinition struct {
 	// Must be present (but may be empty) if {variety} is union, otherwise must be ·absent·.
 	// The sequence may contain any primitive or ordinary simple type definition, but must not contain any special type definitions.
 	numberTypeDefinitions interface{}
+
+	// A Go type for representing a content
+	goType string
 }
 
 type assertion struct {

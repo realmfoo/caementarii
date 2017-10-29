@@ -88,6 +88,11 @@ var stringPrimitive = newPrimitive(
 	},
 )
 
+func init() {
+	stringPrimitive.goType = "string"
+}
+
+// newPrimitive creates a new primitive type by a template.
 func newPrimitive(name string, facets []interface{}, fundamentalFacets []interface{}) *simpleTypeDefinition {
 	t := &simpleTypeDefinition{
 		name:               xml.Name{Space: xmlNs, Local: name},
