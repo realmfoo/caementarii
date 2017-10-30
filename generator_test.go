@@ -1,9 +1,11 @@
 package goxsd
 
 import (
+	"bufio"
 	"encoding/xml"
 	"github.com/realmfoo/caementarii/xsd"
 	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -19,8 +21,11 @@ func TestGenerator(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
+
 	g := Generator{
 		PkgName: "xmlschema",
 	}
-	g.Generate(&s)
+	g.Generate(&s, w)
 }

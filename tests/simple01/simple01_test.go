@@ -1,6 +1,7 @@
 package simple01
 
 import (
+	"bytes"
 	"encoding/xml"
 	"github.com/realmfoo/caementarii"
 	"github.com/realmfoo/caementarii/xsd"
@@ -21,10 +22,15 @@ func TestSimple01(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	buf := new(bytes.Buffer)
+
 	g := goxsd.Generator{
 		PkgName: "simple01",
 	}
-	g.Generate(&s)
+	g.Generate(&s, buf)
+
+	expected, _ := ioutil.ReadFile("simple01.go")
+	assert.Equal(t, string(expected), buf.String())
 }
 
 func TestLastnameMarshaler(t *testing.T) {

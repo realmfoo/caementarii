@@ -1,11 +1,12 @@
 package goxsd
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"github.com/realmfoo/caementarii/xsd"
-	"os"
+	"go/format"
+	"io"
 	"regexp"
 	"strings"
 )
@@ -14,13 +15,39 @@ type Generator struct {
 	PkgName string
 }
 
-func (g *Generator) Generate(s *xsd.Schema) {
+func (g *Generator) Generate(s *xsd.Schema, o io.Writer) error {
+	schema := parseSchema(s, g)
 
-	w := bufio.NewWriter(os.Stdout)
-	defer w.Flush()
+	w := new(bytes.Buffer)
+	w.WriteString("package " + g.PkgName + "\n\n")
+	w.WriteString("import (\n")
+	w.WriteString(`	"encoding/xml"` + "\n")
+	w.WriteString(")\n")
 
+	for _, elm := range schema.elementDeclarations {
+		w.WriteString("\n")
+		w.WriteString(`type ` + strings.Title(elm.name.Local) + ` struct {` + "\n")
+		if elm.name.Space != "" {
+			w.WriteString(`	XMLName xml.Name ` + "`" + `xml:"` + elm.name.Space + ` ` + elm.name.Local + `"` + "`\n")
+			if typeDef, ok := elm.typeDefinition.(*simpleTypeDefinition); ok {
+				w.WriteString(`	Value ` + typeDef.primitiveTypeDefinition.goType + " `xml:\",chardata\"`\n")
+			}
+		}
+		w.WriteString("}\n")
+	}
+
+	formatted, err := format.Source(w.Bytes())
+	if err != nil {
+		o.Write(w.Bytes())
+		return err
+	}
+
+	o.Write(formatted)
+	return nil
+}
+
+func parseSchema(s *xsd.Schema, g *Generator) *schema {
 	schema := newSchema(s)
-
 	for _, top := range s.SchemaTop {
 		if node, ok := top.(xsd.Element); ok {
 			// 3.3.2.1 Common Mapping Rules for Element Declarations
@@ -34,23 +61,7 @@ func (g *Generator) Generate(s *xsd.Schema) {
 			schema.elementDeclarations[elm.name] = elm
 		}
 	}
-
-	w.WriteString("package " + g.PkgName + "\n\n")
-	w.WriteString("import (\n")
-	w.WriteString(`	"encoding/xml"` + "\n")
-	w.WriteString(")\n")
-
-	for _, elm := range schema.elementDeclarations {
-		w.WriteString("\n")
-		w.WriteString(`type ` + strings.Title(elm.name.Local) + ` struct {` + "\n")
-		if elm.name.Space != "" {
-			w.WriteString(`	XMLName xml.Name ` + "`" + `xml:"` + elm.name.Space + ` ` + elm.name.Local + `"` + "`\n")
-			if typeDef, ok := elm.typeDefinition.(*simpleTypeDefinition); ok {
-				w.WriteString(`    Value ` + typeDef.primitiveTypeDefinition.goType + " `xml:\",chardata\"`\n")
-			}
-		}
-		w.WriteString("}\n")
-	}
+	return schema
 }
 
 func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.ComplexType) complexTypeDefinition {
@@ -352,4 +363,9 @@ func normalizeValue(s string) string {
 	// collapse
 	r = strings.Trim(regexp.MustCompile(" +").ReplaceAllString(r, " "), " ")
 	return r
+}
+
+// stringWriter is the interface that wraps the WriteString method.
+type stringWriter interface {
+	WriteString(s string) (n int, err error)
 }
