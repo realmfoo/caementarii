@@ -17,12 +17,10 @@ type Generator struct {
 
 func (g *Generator) Generate(s *xsd.Schema, o io.Writer) error {
 	schema := parseSchema(s, g)
+	file := toGoFile(g.PkgName, schema)
 
 	w := new(bytes.Buffer)
-	w.WriteString("package " + g.PkgName + "\n\n")
-	w.WriteString("import (\n")
-	w.WriteString(`	"encoding/xml"` + "\n")
-	w.WriteString(")\n")
+	file.Write(w)
 
 	for _, elm := range schema.elementDeclarations {
 		w.WriteString("\n")
@@ -44,6 +42,13 @@ func (g *Generator) Generate(s *xsd.Schema, o io.Writer) error {
 
 	o.Write(formatted)
 	return nil
+}
+
+func toGoFile(pkgName string, schema *schema) *File {
+	f := &File{PkgName: pkgName}
+	f.Require("encoding/xml")
+
+	return f
 }
 
 func parseSchema(s *xsd.Schema, g *Generator) *schema {
