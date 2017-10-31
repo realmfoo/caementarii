@@ -34,31 +34,30 @@ func TestSimple01(t *testing.T) {
 }
 
 func TestLastnameMarshaler(t *testing.T) {
-	n := Lastname{Value: "Some value"}
-	data, e := xml.Marshal(n)
+	lastname := Lastname("Some value")
+	data, e := xml.Marshal(lastname)
 	if e != nil {
 		t.Fatal(e)
 	}
-
 	assert.Equal(t, `<lastname xmlns="urn:caementarii:simple">Some value</lastname>`, string(data))
 }
 
 func TestLastnameUnmarshaler(t *testing.T) {
 	tests := []struct {
 		in  string
-		out string
+		out Lastname
 	}{
 		{`<lastname xmlns="urn:caementarii:simple">Some value</lastname>`, `Some value`},
 		{`<lastname xmlns="urn:caementarii:simple"/>`, ``},
 	}
 
 	for _, tt := range tests {
-		n := Lastname{}
-		e := xml.Unmarshal([]byte(tt.in), &n)
+		var r Lastname
+		e := xml.Unmarshal([]byte(tt.in), &r)
 		if e != nil {
 			t.Fatal(e)
 		}
 
-		assert.Equal(t, tt.out, n.Value)
+		assert.Equal(t, tt.out, r)
 	}
 }
