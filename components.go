@@ -9,6 +9,14 @@ import (
 
 var unbound = math.MaxInt32
 
+type TypeDefinition interface {
+	aTypeDef()
+}
+
+type typeDefinition struct{}
+
+func (*typeDefinition) aTypeDef() {}
+
 // Attribute declarations provide for:
 //
 // * Local ·validation· of attribute information item values using a simple type definition;
@@ -76,7 +84,7 @@ type alternative struct {
 	// An XPath Expression property record. Optional.
 	test *xpathExpression
 	// A Type Definition component. Required.
-	typeDefinition interface{}
+	typeDefinition TypeDefinition
 }
 
 // XPath Expression
@@ -124,7 +132,7 @@ type complexTypeDefinition struct {
 	// A name with optional target namespace.
 	name xml.Name
 	// A Type Definition component. Required.
-	baseTypeDefinition interface{}
+	baseTypeDefinition TypeDefinition
 	// A subset of {extension, restriction}.
 	final []string
 	// Required if {name} is ·absent·, otherwise must be ·absent·.
@@ -144,6 +152,8 @@ type complexTypeDefinition struct {
 	prohibitedSubstitutions []string
 	// A sequence of Assertion components.
 	assertions []assertion
+
+	typeDefinition
 }
 
 type complexTypeContentType struct {
@@ -177,11 +187,11 @@ type simpleTypeDefinition struct {
 	context interface{}
 	// A Type Definition component. Required.
 	// With one exception, the {base type definition} of any Simple Type Definition is a Simple Type Definition. The exception is ·xs:anySimpleType·, which has ·xs:anyType·, a Complex Type Definition, as its {base type definition}.
-	baseTypeDefinition interface{}
+	baseTypeDefinition TypeDefinition
 	// A set of Constraining Facet components.
-	facets []interface{}
+	facets []ConstrainingFacet
 	// A set of Fundamental Facet components.
-	fundamentalFacets []interface{}
+	fundamentalFacets []FundamentalFacet
 	// One of {atomic, list, union}. Required for all Simple Type Definitions except ·xs:anySimpleType·, in which it is ·absent·.
 	variety string
 	// A Simple Type Definition component. With one exception, required if {variety} is atomic, otherwise must be ·absent·. The exception is ·xs:anyAtomicType·, whose {primitive type definition} is ·absent·.
@@ -193,10 +203,12 @@ type simpleTypeDefinition struct {
 	// A sequence of primitive or ordinary Simple Type Definition components.
 	// Must be present (but may be empty) if {variety} is union, otherwise must be ·absent·.
 	// The sequence may contain any primitive or ordinary simple type definition, but must not contain any special type definitions.
-	numberTypeDefinitions interface{}
+	numberTypeDefinitions []TypeDefinition
 
 	// A Go type for representing a content
 	goType string
+
+	typeDefinition
 }
 
 type assertion struct {
@@ -303,7 +315,7 @@ type schema struct {
 	// A sequence of Annotation components.
 	annotations []annotation
 	// A set of Type Definition components.
-	typeDefinitions map[xml.Name]interface{}
+	typeDefinitions map[xml.Name]TypeDefinition
 	// A set of Attribute Declaration components.
 	attributeDeclarations []attributeDeclaration
 	// A set of Element Declaration components.
@@ -336,7 +348,7 @@ func newSchema(s *xsd.Schema) *schema {
 		xsdSchema:           s,
 		targetNamespace:     s.TargetNamespace,
 		prefixMap:           prefixMap,
-		typeDefinitions:     make(map[xml.Name]interface{}, 0),
+		typeDefinitions:     make(map[xml.Name]TypeDefinition, 0),
 		elementDeclarations: make(map[xml.Name]elementDeclaration, 0),
 	}
 }
@@ -353,30 +365,72 @@ func (s *schema) resolveQName(qname string) (name xml.Name) {
 	return
 }
 
-type valueConstraint struct {
-	// One of {default, fixed}. Required.
-	variety string
-	// An actual value. Required
-	value interface{}
-	// A character string. Required.
-	lexicalForm string
+//-----------------------------------------------------------------------------
+// Constraining Facets
+
+type ConstrainingFacet interface {
+	aConstrainingFacet()
 }
 
-type whiteSpaceFacet struct {
-	// A sequence of Annotation components.
-	annotations []annotation
-	// One of {preserve, replace, collapse}. Required.
-	value string
-	// An xs:boolean value. Required.
-	fixed bool
+type (
+	valueConstraint struct {
+		// One of {default, fixed}. Required.
+		variety string
+		// An actual value. Required
+		value interface{}
+		// A character string. Required.
+		lexicalForm string
+
+		constrainingFacet
+	}
+
+	whiteSpaceFacet struct {
+		// A sequence of Annotation components.
+		annotations []annotation
+		// One of {preserve, replace, collapse}. Required.
+		value string
+		// An xs:boolean value. Required.
+		fixed bool
+
+		constrainingFacet
+	}
+)
+
+type constrainingFacet struct{}
+
+func (*constrainingFacet) aConstrainingFacet() {}
+
+//-----------------------------------------------------------------------------
+// Fundamental Facets
+
+type FundamentalFacet interface {
+	aFundamentalFacet()
 }
 
-// One of {false, partial, total}. Required.
-type orderedFacet string
+type (
+	// One of {false, partial, total}. Required.
+	orderedFacet struct {
+		string
+		fundamentalFacet
+	}
 
-type boundedFacet bool
+	boundedFacet struct {
+		bool
+		fundamentalFacet
+	}
 
-// One of {finite, countably infinite}.
-type cardinalityFacet string
+	// One of {finite, countably infinite}.
+	cardinalityFacet struct {
+		string
+		fundamentalFacet
+	}
 
-type numericFacet bool
+	numericFacet struct {
+		bool
+		fundamentalFacet
+	}
+)
+
+type fundamentalFacet struct{}
+
+func (*fundamentalFacet) aFundamentalFacet() {}

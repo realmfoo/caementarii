@@ -6,7 +6,7 @@ import (
 
 const xmlNs = "http://www.w3.org/2001/XMLSchema"
 
-var xmlTypes = map[xml.Name]interface{}{
+var xmlTypes = map[xml.Name]TypeDefinition{
 	anyType.name:         anyType,
 	anySimpleType.name:   anySimpleType,
 	anyAtomicType.name:   anyAtomicType,
@@ -59,9 +59,9 @@ var anyType = &complexTypeDefinition{
 var anySimpleType = &simpleTypeDefinition{
 	name:               xml.Name{Space: xmlNs, Local: "anySimpleType"},
 	final:              []string{},
-	facets:             []interface{}{},
+	facets:             []ConstrainingFacet{},
 	baseTypeDefinition: anyType,
-	fundamentalFacets:  []interface{}{},
+	fundamentalFacets:  []FundamentalFacet{},
 	annotations:        []annotation{},
 }
 
@@ -69,22 +69,22 @@ var anyAtomicType = &simpleTypeDefinition{
 	name:               xml.Name{Space: xmlNs, Local: "anyAtomicType"},
 	final:              []string{},
 	baseTypeDefinition: anySimpleType,
-	facets:             []interface{}{},
+	facets:             []ConstrainingFacet{},
 	variety:            "atomic",
-	fundamentalFacets:  []interface{}{},
+	fundamentalFacets:  []FundamentalFacet{},
 	annotations:        []annotation{},
 }
 
 var stringPrimitive = newPrimitive(
 	"string",
-	[]interface{}{
-		whiteSpaceFacet{value: "preserve", fixed: false},
+	[]ConstrainingFacet{
+		&whiteSpaceFacet{value: "preserve", fixed: false},
 	},
-	[]interface{}{
-		orderedFacet("false"),
-		boundedFacet(false),
-		cardinalityFacet("countably infinite"),
-		numericFacet(false),
+	[]FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
 	},
 )
 
@@ -93,7 +93,7 @@ func init() {
 }
 
 // newPrimitive creates a new primitive type by a template.
-func newPrimitive(name string, facets []interface{}, fundamentalFacets []interface{}) *simpleTypeDefinition {
+func newPrimitive(name string, facets []ConstrainingFacet, fundamentalFacets []FundamentalFacet) *simpleTypeDefinition {
 	t := &simpleTypeDefinition{
 		name:               xml.Name{Space: xmlNs, Local: name},
 		baseTypeDefinition: anyAtomicType,

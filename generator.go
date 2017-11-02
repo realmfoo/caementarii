@@ -69,7 +69,7 @@ func parseSchema(s *xsd.Schema, g *Generator) *schema {
 	return schema
 }
 
-func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.ComplexType) complexTypeDefinition {
+func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.ComplexType) *complexTypeDefinition {
 	typeDef := complexTypeDefinition{}
 
 	// The ·actual value· of the name [attribute].
@@ -95,14 +95,14 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	// A sequence whose members are Assertions drawn from the following sources, in order:
 	// 1 The {assertions} of the {base type definition}.
 	// 2 Assertions corresponding to all the <assert> element information items among the [children] of <complexType>, <restriction> and <extension>, if any, in document order.
-	//typeDef.assertions =
+	//typeDefinition.assertions =
 
 	// The ·annotation mapping· of the set of elements containing the <complexType>, the <openContent> [child], if
 	// present, the <attributeGroup> [children], if present, the <simpleContent> and <complexContent> [children], if
 	// present, and their <restriction> and <extension> [children], if present, and their <openContent> and
 	// <attributeGroup> [children], if present, as defined in
 	// XML Representation of Annotation Schema Components (§3.15.2).
-	//typeDef.annotations =
+	//typeDefinition.annotations =
 
 	if node.SimpleContent != nil {
 		// If the <restriction> alternative is chosen, then restriction, otherwise (the <extension> alternative is
@@ -145,7 +145,7 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 				// mixed and {particle} a Particle which is ·emptiable·, as defined in Particle Emptiable (§3.9.6.3) and
 				// the <restriction> alternative is chosen, then (let SB be the simple type definition corresponding to
 				// the <simpleType> among the [children] of <restriction> if any, otherwise ·xs:anySimpleType·) a simple
-				// type definition which restricts SB with a set of facet components corresponding to the appropriate
+				// type definition which restricts SB with a set of constrainingFacet components corresponding to the appropriate
 				// element information items among the <restriction>'s [children] (i.e. those which specify facets,
 				// if any), as defined in Simple Type Restriction (Facets) (§3.16.6.4);
 				//
@@ -200,11 +200,11 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 
 	}
 
-	return typeDef
+	return &typeDef
 }
 
 // resolveType resolves a qname into Type Definition
-func (g *Generator) resolveType(s *schema, name xml.Name) interface{} {
+func (g *Generator) resolveType(s *schema, name xml.Name) TypeDefinition {
 	// Check if type is a built-in type
 	if typeDef, ok := xmlTypes[name]; ok {
 		return typeDef
