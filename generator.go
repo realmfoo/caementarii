@@ -17,22 +17,10 @@ type Generator struct {
 
 func (g *Generator) Generate(s *xsd.Schema, o io.Writer) error {
 	schema := parseSchema(s, g)
-	file := toGoFile(g.PkgName, schema)
 
+	file := toGoFile(g.PkgName, schema)
 	w := new(bytes.Buffer)
 	file.Write(w)
-
-	for _, elm := range schema.elementDeclarations {
-		w.WriteString("\n")
-		w.WriteString(`type ` + strings.Title(elm.name.Local) + ` struct {` + "\n")
-		if elm.name.Space != "" {
-			w.WriteString(`	XMLName xml.Name ` + "`" + `xml:"` + elm.name.Space + ` ` + elm.name.Local + `"` + "`\n")
-			if typeDef, ok := elm.typeDefinition.(*simpleTypeDefinition); ok {
-				w.WriteString(`	Value ` + typeDef.primitiveTypeDefinition.goType + " `xml:\",chardata\"`\n")
-			}
-		}
-		w.WriteString("}\n")
-	}
 
 	formatted, err := format.Source(w.Bytes())
 	if err != nil {
@@ -46,7 +34,21 @@ func (g *Generator) Generate(s *xsd.Schema, o io.Writer) error {
 
 func toGoFile(pkgName string, schema *schema) *File {
 	f := &File{PkgName: pkgName}
-	f.Require("encoding/xml")
+
+	for _, elm := range schema.elementDeclarations {
+		decl := &TypeDecl{
+			Name: &Name{Value: strings.Title(elm.name.Local)},
+		}
+
+		//f.Require("encoding/xml")
+		if typeDef, ok := elm.typeDefinition.(*simpleTypeDefinition); ok {
+			decl.Type = &Name{Value: typeDef.primitiveTypeDefinition.goType}
+		} else {
+			decl.Type = &StructType{}
+		}
+
+		f.DeclList = append(f.DeclList, decl)
+	}
 
 	return f
 }
@@ -212,12 +214,10 @@ func (g *Generator) resolveType(s *schema, name xml.Name) TypeDefinition {
 
 	// Check if type is already parsed
 	if typeDef, ok := s.typeDefinitions[name]; ok {
-		fmt.Println("Found cache", name)
 		return typeDef
 	}
 
 	// Find and parse type definition
-	fmt.Println("Finding", name)
 	if s.targetNamespace == s.targetNamespace {
 		for _, top := range s.xsdSchema.SchemaTop {
 			switch t := top.(type) {
@@ -368,9 +368,4 @@ func normalizeValue(s string) string {
 	// collapse
 	r = strings.Trim(regexp.MustCompile(" +").ReplaceAllString(r, " "), " ")
 	return r
-}
-
-// stringWriter is the interface that wraps the WriteString method.
-type stringWriter interface {
-	WriteString(s string) (n int, err error)
 }

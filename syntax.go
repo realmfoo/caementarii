@@ -32,7 +32,7 @@ func (*node) aNode() {}
 type (
 	File struct {
 		PkgName  string
-		Imports  []ImportDecl
+		Imports  []Decl
 		DeclList []Decl
 	}
 )
@@ -42,7 +42,8 @@ type (
 type (
 	ImportDecl struct {
 		LocalPkgName *Name
-		Path         string
+		Path         *BasicLit
+		Group        *Group // nil means not part of a group
 		decl
 	}
 
@@ -85,6 +86,21 @@ type (
 		Kind  LitKind
 		expr
 	}
+
+	// struct { FieldList[0] TagList[0]; FieldList[1] TagList[1]; ... }
+	StructType struct {
+		FieldList []*Field
+		TagList   []*BasicLit // i >= len(TagList) || TagList[i] == nil means no tag for field i
+		expr
+	}
+
+	// Name Type
+	//      Type
+	Field struct {
+		Name *Name // nil means anonymous field/parameter (structs/parameters), or embedded interface (interfaces)
+		Type Expr  // field names declared in a list share the same Type (identical pointers)
+		node
+	}
 )
 
 type expr struct{ node }
@@ -96,13 +112,19 @@ func (*expr) aExpr() {}
 
 func (f *File) Require(path string) {
 	if !f.HasImport(path) {
-		f.Imports = append(f.Imports, ImportDecl{Path: "encoding/xml"})
+		f.Imports = append(
+			f.Imports,
+			&ImportDecl{
+				Group: &Group{},
+				Path:  &BasicLit{Value: `"` + path + `"`},
+			},
+		)
 	}
 }
 
 func (f *File) HasImport(path string) bool {
 	for _, i := range f.Imports {
-		if i.Path == path {
+		if i.(*ImportDecl).Path.Value == path {
 			return true
 		}
 	}
@@ -111,23 +133,17 @@ func (f *File) HasImport(path string) bool {
 }
 
 func (f *File) Write(buf *bytes.Buffer) {
+	p := printer{output: buf}
+
 	writePackageName(buf, f)
-	writeImports(buf, f)
+	p.print(&printGroup{Tok: _Import, Decls: f.Imports}, newline, newline)
+	for _, t := range f.DeclList {
+		p.print(t, newline)
+	}
+
+	p.flush(_EOF)
 }
 
 func writePackageName(w *bytes.Buffer, file *File) (int, error) {
 	return w.WriteString("package " + file.PkgName + "\n\n")
-}
-
-func writeImports(w *bytes.Buffer, file *File) {
-	w.WriteString("import (\n")
-	for _, imp := range file.Imports {
-		w.WriteString(`	`)
-		if imp.LocalPkgName != nil {
-			w.WriteString(imp.LocalPkgName.Value)
-			w.WriteString(" ")
-		}
-		w.WriteString(`"` + imp.Path + `"` + "\n")
-	}
-	w.WriteString(")\n")
 }

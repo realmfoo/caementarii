@@ -16,13 +16,20 @@ const (
 )
 
 type printer struct {
-	output io.Writer
+	output     io.Writer
+	linebreaks bool // print linebreaks instead of semis
 
 	indent  int // current indentation level
 	nlcount int // number of consecutive newlines
 
 	pending []whitespace // pending whitespace
 	lastTok token        // last token (after any pending semi) processed by print
+}
+
+type printGroup struct {
+	node
+	Tok   token
+	Decls []Decl
 }
 
 type whitespace struct {
@@ -87,6 +94,21 @@ func (p *printer) printNode(n Node) {
 	case *Name:
 		p.print(_Name, n.Value) // _Name requires actual value following immediately
 
+	case *BasicLit:
+		p.print(_Name, n.Value) // _Name requires actual value following immediately
+
+	case *printGroup:
+		p.print(n.Tok, blank, _Lparen)
+		if len(n.Decls) > 0 {
+			p.print(newline, indent)
+			for _, d := range n.Decls {
+				p.printNode(d)
+				p.print(_Semi, newline)
+			}
+			p.print(outdent)
+		}
+		p.print(_Rparen)
+
 	case *TypeDecl:
 		if n.Group == nil {
 			p.print(_Type, blank)
@@ -97,7 +119,65 @@ func (p *printer) printNode(n Node) {
 		}
 		p.print(n.Type)
 
+	case *StructType:
+		p.print(_Struct)
+		if len(n.FieldList) > 0 && p.linebreaks {
+			p.print(blank)
+		}
+		p.print(_Lbrace)
+		if len(n.FieldList) > 0 {
+			p.print(newline, indent)
+			p.printFieldList(n.FieldList, n.TagList)
+			p.print(outdent, newline)
+		}
+		p.print(_Rbrace)
+
+	case *ImportDecl:
+		if n.Group == nil {
+			p.print(_Import, blank)
+		}
+		if n.LocalPkgName != nil {
+			p.print(n.LocalPkgName, blank)
+		}
+		p.print(n.Path)
+
 	}
+}
+
+func (p *printer) printFields(fields []*Field, tags []*BasicLit, i, j int) {
+	if i+1 == j && fields[i].Name == nil {
+		// anonymous field
+		p.printNode(fields[i].Type)
+	} else {
+		for k, f := range fields[i:j] {
+			if k > 0 {
+				p.print(_Comma, blank)
+			}
+			p.printNode(f.Name)
+		}
+		p.print(blank)
+		p.printNode(fields[i].Type)
+	}
+	if i < len(tags) && tags[i] != nil {
+		p.print(blank)
+		p.printNode(tags[i])
+	}
+}
+
+func (p *printer) printFieldList(fields []*Field, tags []*BasicLit) {
+	i0 := 0
+	var typ Expr
+	for i, f := range fields {
+		if f.Name == nil || f.Type != typ {
+			if i0 < i {
+				p.printFields(fields, tags, i0, i)
+				p.print(_Semi, newline)
+				i0 = i
+			}
+			typ = f.Type
+		}
+	}
+	p.printFields(fields, tags, i0, len(fields))
 }
 
 func (p *printer) write(data []byte) {
