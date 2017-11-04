@@ -97,6 +97,21 @@ func (p *printer) printNode(n Node) {
 	case *BasicLit:
 		p.print(_Name, n.Value) // _Name requires actual value following immediately
 
+	case *CompositeLit:
+		if n.Type != nil {
+			p.print(n.Type)
+		}
+		p.print(_Lbrace)
+		if n.NKeys > 0 && n.NKeys == len(n.ElemList) {
+			p.printExprLines(n.ElemList)
+		} else {
+			p.printExprList(n.ElemList)
+		}
+		p.print(_Rbrace)
+
+	case *KeyValueExpr:
+		p.print(n.Key, _Colon, blank, n.Value)
+
 	case *printGroup:
 		p.print(n.Tok, blank, _Lparen)
 		if len(n.Decls) > 0 {
@@ -118,6 +133,18 @@ func (p *printer) printNode(n Node) {
 			p.print(_Assign, blank)
 		}
 		p.print(n.Type)
+
+	case *VarDecl:
+		if n.Group == nil {
+			p.print(_Var, blank)
+		}
+		p.printNameList(n.NameList)
+		if n.Type != nil {
+			p.print(blank, n.Type)
+		}
+		if n.Values != nil {
+			p.print(blank, _Assign, blank, n.Values)
+		}
 
 	case *StructType:
 		p.print(_Struct)
@@ -291,4 +318,32 @@ func impliesSemi(tok token) bool {
 		return true
 	}
 	return false
+}
+
+func (p *printer) printNameList(list []*Name) {
+	for i, x := range list {
+		if i > 0 {
+			p.print(_Comma, blank)
+		}
+		p.printNode(x)
+	}
+}
+
+func (p *printer) printExprList(list []Expr) {
+	for i, x := range list {
+		if i > 0 {
+			p.print(_Comma, blank)
+		}
+		p.printNode(x)
+	}
+}
+
+func (p *printer) printExprLines(list []Expr) {
+	if len(list) > 0 {
+		p.print(newline, indent)
+		for _, x := range list {
+			p.print(x, _Comma, newline)
+		}
+		p.print(outdent)
+	}
 }

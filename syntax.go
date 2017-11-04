@@ -47,6 +47,17 @@ type (
 		decl
 	}
 
+	// NameList Type
+	// NameList Type = Values
+	// NameList      = Values
+	VarDecl struct {
+		NameList []*Name
+		Type     Expr   // nil means no type
+		Values   Expr   // nil means no values
+		Group    *Group // nil means not part of a group
+		decl
+	}
+
 	TypeDecl struct {
 		Name  *Name
 		Alias bool
@@ -100,6 +111,20 @@ type (
 		Name *Name // nil means anonymous field/parameter (structs/parameters), or embedded interface (interfaces)
 		Type Expr  // field names declared in a list share the same Type (identical pointers)
 		node
+	}
+
+	// Type { ElemList[0], ElemList[1], ... }
+	CompositeLit struct {
+		Type     Expr // nil means no literal type
+		ElemList []Expr
+		NKeys    int // number of elements with keys
+		expr
+	}
+
+	// Key: Value
+	KeyValueExpr struct {
+		Key, Value Expr
+		expr
 	}
 )
 
