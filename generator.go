@@ -45,19 +45,7 @@ func toGoFile(pkgName string, schema *schema) *File {
 			f.Require("encoding/xml")
 			f.DeclList = append(f.DeclList, &VarDecl{
 				NameList: []*Name{{Value: "ns" + decl.Name.Value}},
-				Values: &CompositeLit{
-					Type: &Name{Value: "xml.Name"},
-					ElemList: []Expr{
-						&KeyValueExpr{
-							Key:   &BasicLit{Value: "Space"},
-							Value: &BasicLit{Value: `"` + elm.name.Space + `"`},
-						},
-						&KeyValueExpr{
-							Key:   &BasicLit{Value: "Local"},
-							Value: &BasicLit{Value: `"` + elm.name.Local + `"`},
-						},
-					},
-				},
+				Values:   &BasicLit{Value: `xml.Name{Space: "` + elm.name.Space + `", Local: "` + elm.name.Local + `"}`},
 			})
 		} else {
 			decl.Type = &StructType{}
