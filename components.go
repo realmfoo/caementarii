@@ -7,13 +7,14 @@ import (
 	"strings"
 )
 
-var unbound = math.MaxInt32
+var unbounded = math.MaxInt32
 
 type TypeDefinition interface {
 	aTypeDef()
 }
 
-type typeDefinition struct{}
+type typeDefinition struct {
+}
 
 func (*typeDefinition) aTypeDef() {}
 
@@ -22,8 +23,6 @@ func (*typeDefinition) aTypeDef() {}
 // * Local ·validation· of attribute information item values using a simple type definition;
 // * Specifying default or fixed values for attribute information items.
 type attributeDeclaration struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// A name with optional target namespace.
 	name xml.Name
 	// A Simple Type Definition component. Required.
@@ -36,6 +35,8 @@ type attributeDeclaration struct {
 	}
 	valueConstraint valueConstraint
 	inheritable     bool
+
+	annotatedComponent
 }
 
 // Element declarations provide for:
@@ -45,8 +46,6 @@ type attributeDeclaration struct {
 // * Establishing uniquenesses and reference constraint relationships among the values of related elements and attributes;
 // * Controlling the substitutability of elements through the mechanism of ·element substitution groups·.
 type elementDeclaration struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// A name with optional target namespace.
 	name xml.Name
 	// A Type Definition component. Required.
@@ -76,15 +75,17 @@ type elementDeclaration struct {
 	disallowedSubstitutions []string
 	// An xs:boolean value. Required.
 	abstract bool
+
+	annotatedComponent
 }
 
 type alternative struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// An XPath Expression property record. Optional.
 	test *xpathExpression
 	// A Type Definition component. Required.
 	typeDefinition TypeDefinition
+
+	annotatedComponent
 }
 
 // XPath Expression
@@ -101,8 +102,6 @@ type xpathExpression struct {
 
 // Identity-constraint definition components provide for uniqueness and reference constraints with respect to the contents of multiple elements and attributes.
 type identityConstraint struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// A name with optional target namespace.
 	name xml.Name
 	// One of {key, keyref, unique}. Required.
@@ -114,6 +113,8 @@ type identityConstraint struct {
 	// An Identity-Constraint Definition component. Required if {identity-constraint category} is keyref, otherwise ({identity-constraint category} is key or unique) must be ·absent·.
 	// If a value is present, its {identity-constraint category} must be key or unique.
 	referencedKey *identityConstraint
+
+	annotatedComponent
 }
 
 type annotation struct {
@@ -127,8 +128,6 @@ type annotation struct {
 
 // Complex Type Definition, a kind of Type Definition
 type complexTypeDefinition struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// A name with optional target namespace.
 	name xml.Name
 	// A Type Definition component. Required.
@@ -154,6 +153,7 @@ type complexTypeDefinition struct {
 	assertions []assertion
 
 	typeDefinition
+	annotatedComponent
 }
 
 type complexTypeContentType struct {
@@ -176,8 +176,6 @@ type openContent struct {
 
 // Simple Type Definition, a kind of Type Definition
 type simpleTypeDefinition struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// A name with optional target namespace.
 	name xml.Name
 	// A subset of {extension, restriction, list, union}.
@@ -209,21 +207,20 @@ type simpleTypeDefinition struct {
 	goType string
 
 	typeDefinition
+	annotatedComponent
 }
 
 type assertion struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// An XPath Expression property record. Required.
 	test xpathExpression
+
+	annotatedComponent
 }
 
 // An attribute use is a utility component which controls the occurrence and defaulting behavior of attribute
 // declarations. It plays the same role for attribute declarations in complex types that particles play for element
 // declarations.
 type attributeUse struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// An xs:boolean value. Required.
 	required bool
 	// An Attribute Declaration component. Required.
@@ -232,29 +229,31 @@ type attributeUse struct {
 	valueConstraint *valueConstraint
 	// An xs:boolean value. Required.
 	inheritable bool
+
+	annotatedComponent
 }
 
 // A schema can name a group of attribute declarations so that they can be incorporated as a group into complex type definitions.
 // Attribute group definitions do not participate in ·validation· as such, but the {attribute uses} and {attribute wildcard} of one or more complex type definitions may be constructed in whole or part by reference to an attribute group. Thus, attribute group definitions provide a replacement for some uses of XML's parameter entity facility. Attribute group definitions are provided primarily for reference from the XML representation of schema components (see <complexType> and <attributeGroup>).
 type attributeGroupDefinition struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// A name with optional target namespace.
 	name xml.Name
 	// A set of Attribute Use components.
 	attributeUses []attributeUse
 	// A Wildcard component. Optional.
 	attributeWildcard wildcard
+
+	annotatedComponent
 }
 
 // In order to exploit the full potential for extensibility offered by XML plus namespaces, more provision is needed than DTDs allow for targeted flexibility in content models and attribute declarations. A wildcard provides for ·validation· of attribute and element information items dependent on their namespace names and optionally on their local names.
 type wildcard struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// A Namespace Constraint property record. Required.
 	namespaceConstraint wildcardNamespaceConstraint
 	// One of {skip, strict, lax}. Required.
 	processContents string
+
+	annotatedComponent
 }
 
 type wildcardNamespaceConstraint struct {
@@ -269,21 +268,21 @@ type wildcardNamespaceConstraint struct {
 // A model group definition associates a name and optional annotations with a Model Group. By reference to the name, the entire model group can be incorporated by reference into a {term}.
 // Model group definitions are provided primarily for reference from the XML Representation of Complex Type Definition Schema Components (§3.4.2) (see <complexType> and <group>). Thus, model group definitions provide a replacement for some uses of XML's parameter entity facility.
 type modelGroupDefinition struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// A name with optional target namespace.
 	name xml.Name
 	// A Model Group component. Required.
 	modelGroup modelGroup
+
+	annotatedComponent
 }
 
 type modelGroup struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// One of {all, choice, sequence}. Required.
 	compositor string
 	// A sequence of Particle components.
-	particles []particle
+	particles []*particle
+
+	annotatedComponent
 }
 
 type particle struct {
@@ -292,15 +291,13 @@ type particle struct {
 	// Either a positive integer or unbounded. Required.
 	maxOccurs int
 	// A Term component. Required.
-	term interface{}
-	// A sequence of Annotation components.
-	annotations []annotation
+	term AnnotatedComponent
+
+	annotatedComponent
 }
 
 // Notation declarations reconstruct XML NOTATION declarations.
 type notationDeclaration struct {
-	// A sequence of Annotation components.
-	annotations []annotation
 	// A name with optional target namespace.
 	name xml.Name
 	// An xs:anyURI value. Required if {public identifier} is ·absent·, otherwise ({public identifier} is present) optional.
@@ -308,6 +305,8 @@ type notationDeclaration struct {
 	// A publicID value. Required if {system identifier} is ·absent·, otherwise ({system identifier} is present) optional.
 	// As defined in [XML 1.0] or [XML 1.1].
 	publicIdentifier string
+
+	annotatedComponent
 }
 
 // At the abstract level, the schema itself is just a container for its components.
@@ -319,7 +318,7 @@ type schema struct {
 	// A set of Attribute Declaration components.
 	attributeDeclarations []attributeDeclaration
 	// A set of Element Declaration components.
-	elementDeclarations map[xml.Name]elementDeclaration
+	elementDeclarations map[xml.Name]*elementDeclaration
 	// A set of Attribute Group Definition components.
 	attributeGroupDefinitions []attributeGroupDefinition
 	// A set of Model Group Definition components.
@@ -349,7 +348,7 @@ func newSchema(s *xsd.Schema) *schema {
 		targetNamespace:     s.TargetNamespace,
 		prefixMap:           prefixMap,
 		typeDefinitions:     make(map[xml.Name]TypeDefinition, 0),
-		elementDeclarations: make(map[xml.Name]elementDeclaration, 0),
+		elementDeclarations: make(map[xml.Name]*elementDeclaration, 0),
 	}
 }
 
@@ -434,3 +433,17 @@ type (
 type fundamentalFacet struct{}
 
 func (*fundamentalFacet) aFundamentalFacet() {}
+
+//-----------------------------------------------------------------------------
+// Annotated Component
+
+type AnnotatedComponent interface {
+	anAnnotatedComponent()
+}
+
+type annotatedComponent struct {
+	// A sequence of Annotation components.
+	annotations []annotation
+}
+
+func (*annotatedComponent) anAnnotatedComponent() {}

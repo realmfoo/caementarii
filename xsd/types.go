@@ -2,7 +2,12 @@ package xsd
 
 import (
 	"encoding/xml"
+	"fmt"
+	"math"
+	"strconv"
 )
+
+var unbounded = math.MaxInt32
 
 // NCName represents XML "non-colonized" Names.
 // white-space: collapse
@@ -111,6 +116,89 @@ func unmarshalCompositionGroupChoice(d *xml.Decoder, tok xml.Token) (interface{}
 				// unexpected element
 			default:
 				return nil, tok, nil
+			}
+
+			// read next token
+			tok, err = d.Token()
+			if err != nil {
+				return r, tok, err
+			}
+
+			return r, tok, nil
+
+		case xml.EndElement:
+			return nil, tok, err
+		}
+
+		// read next token until xml.StartElement
+		tok, err = d.Token()
+		if err != nil {
+			return r, tok, err
+		}
+
+	}
+
+}
+
+//<xs:group name="nestedParticle">
+//  <xs:choice>
+//    <xs:element name="element" type="xs:localElement"/>
+//    <xs:element name="group" type="xs:groupRef"/>
+//
+//    <xs:element ref="xs:choice"/>
+//    <xs:element ref="xs:sequence"/>
+//    <xs:element ref="xs:any"/>
+//  </xs:choice>
+//</xs:group>
+func unmarshalNestedParticleGroupChoice(d *xml.Decoder, tok xml.Token) (NestedParticle, xml.Token, error) {
+	var err error
+	var r NestedParticle
+
+	for {
+		switch t := tok.(type) {
+		case xml.StartElement:
+			switch t.Name {
+
+			// <xs:element name="element" type="xs:localElement"/>
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "element"}:
+				x := &Element{}
+				if err = d.DecodeElement(x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			// <xs:element name="group" type="xs:groupRef"/>
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "group"}:
+				x := &Group{}
+				if err = d.DecodeElement(x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			//    <xs:element ref="xs:choice"/>
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "choice"}:
+				x := &Choice{}
+				if err = d.DecodeElement(x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			//    <xs:element ref="xs:sequence"/>
+			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "sequence"}:
+				x := &Sequence{}
+				if err = d.DecodeElement(x, &t); err != nil {
+					return nil, tok, err
+				}
+				r = x
+
+			//    <xs:element ref="xs:any"/>
+			default:
+				tok, err = skipToStartElement(d, tok)
+				if err != nil {
+					return r, tok, err
+				}
+
+				continue
 			}
 
 			// read next token
@@ -599,25 +687,27 @@ type SimpleType struct {
 type Element struct {
 	Abstract bool `xml:"abstract,attr"`
 	// (#all | List of (extension | restriction | substitution))
-	Block             string `xml:"block,attr"`
-	Default           string `xml:"default,attr"`
-	Final             string `xml:"final,attr"`
-	Fixed             string `xml:"fixed,attr"`
-	Form              string `xml:"form,attr"`
-	Id                string `xml:"id,attr"`
-	MaxOccurs         string `xml:"maxOccurs,attr"`
-	MinOccurs         int    `xml:"minOccurs,attr"`
-	Name              string `xml:"name,attr"`
-	Nillable          bool   `xml:"nillable,attr"`
-	Ref               string `xml:"ref,attr"`
-	SubstitutionGroup string `xml:"substitutionGroup"`
-	TargetNamespace   string `xml:"targetNamespace,attr"`
-	Type              string `xml:"type,attr"`
+	Block             string  `xml:"block,attr"`
+	Default           string  `xml:"default,attr"`
+	Final             string  `xml:"final,attr"`
+	Fixed             string  `xml:"fixed,attr"`
+	Form              string  `xml:"form,attr"`
+	Id                string  `xml:"id,attr"`
+	MaxOccurs         *string `xml:"maxOccurs,attr"`
+	MinOccurs         *int    `xml:"minOccurs,attr"`
+	Name              string  `xml:"name,attr"`
+	Nillable          bool    `xml:"nillable,attr"`
+	Ref               string  `xml:"ref,attr"`
+	SubstitutionGroup string  `xml:"substitutionGroup"`
+	TargetNamespace   string  `xml:"targetNamespace,attr"`
+	Type              string  `xml:"type,attr"`
 
 	Annotation  *Annotation  `xml:"annotation"`
 	SimpleType  *SimpleType  `xml:"simpleType"`
 	ComplexType *ComplexType `xml:"complexType"`
 	Alternative *Alternative `xml:"alternative"`
+
+	nestedParticle
 }
 
 type Alternative struct {
@@ -690,15 +780,6 @@ type ComplexType struct {
 	Attributes      []Attribute      `xml:"attribute"`
 	AttributeGroups []AttributeGroup `xml:"attributeGroup"`
 	Assert          *Assert          `xml:"assert"`
-}
-
-type Sequence struct {
-}
-
-type Choice struct {
-}
-
-type All struct {
 }
 
 type SimpleContent struct {
@@ -774,11 +855,156 @@ type AnyAttribute struct {
 	Annotation *Annotation `xml:"annotation"`
 }
 
-type Group struct {
-}
-
 type AttributeGroup struct {
 }
 
 type Notation struct {
 }
+
+//-----------------------------------------------------------------------------
+// typeDefParticle
+
+type (
+	Sequence struct {
+		XMLAttrs []xml.Attr `xml:"-"`
+
+		Id        string `xml:"id,attr"`
+		MaxOccurs int    `xml:"maxOccurs,attr"`
+		MinOccurs int    `xml:"minOccurs,attr"`
+
+		Annotation *Annotation `xml:"annotation"`
+		Content    []NestedParticle
+
+		nestedParticle
+	}
+
+	Choice struct {
+		nestedParticle
+	}
+
+	All struct {
+	}
+
+	Group struct {
+		nestedParticle
+	}
+)
+
+func (s *Sequence) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var err error
+
+	// Setup Defaults
+	s.MinOccurs = 1
+	s.MaxOccurs = 1
+
+	//s.Xmlns = make(map[string]string)
+	//s.XMLName = start.Name
+	for _, attr := range start.Attr {
+		switch attr.Name {
+		case xml.Name{Space: "", Local: "id"}:
+			s.Id = attr.Value
+		case xml.Name{Space: "", Local: "maxOccurs"}:
+			if attr.Value == "unbounded" {
+				s.MaxOccurs = unbounded
+			} else {
+				s.MaxOccurs, err = strconv.Atoi(attr.Value)
+				if err != nil {
+					return fmt.Errorf("Invalid maxOccurs value: %v", err)
+				}
+			}
+		case xml.Name{Space: "", Local: "minOccurs"}:
+			s.MinOccurs, err = strconv.Atoi(attr.Value)
+			if err != nil {
+				return fmt.Errorf("Invalid minOccurs value: %v", err)
+			}
+		default:
+			s.XMLAttrs = append(s.XMLAttrs, attr)
+		}
+	}
+
+	tok, err := d.Token()
+	if err != nil {
+		return err
+	}
+
+	tok, err = skipToStartElement(d, tok)
+	if err != nil {
+		return err
+	}
+
+	// <xs:element ref="xs:annotation" minOccurs="0"/>
+	for {
+		if (start.Name != xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "annotation"}) {
+			break
+		}
+
+		s.Annotation = &Annotation{}
+		if err = d.DecodeElement(s.Annotation, &start); err != nil {
+			return err
+		}
+
+		tok, err = skipToStartElement(d, tok)
+		if err != nil {
+			return err
+		}
+		start = tok.(xml.StartElement)
+	}
+
+	// <xs:group ref="xs:nestedParticle" minOccurs="0" maxOccurs="unbounded"/>
+	{
+		for {
+			//<xs:choice>
+			//  <xs:element name="element" type="xs:localElement"/>
+			//  <xs:element name="group" type="xs:groupRef"/>
+			//
+			//  <xs:element ref="xs:choice"/>
+			//  <xs:element ref="xs:sequence"/>
+			//  <xs:element ref="xs:any"/>
+			//</xs:choice>
+			var x NestedParticle
+
+			x, tok, err = unmarshalNestedParticleGroupChoice(d, tok)
+			if err != nil {
+				return err
+			}
+
+			// minOccurs="0"
+			if x == nil {
+				break
+			}
+
+			s.Content = append(s.Content, x)
+
+			// maxOccurs="unbounded"
+		}
+	}
+
+	// skip all other
+Loop:
+	for {
+		switch tok.(type) {
+		case xml.StartElement:
+			d.Skip()
+		case xml.EndElement:
+			break Loop
+		}
+
+		tok, err = d.Token()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+//-----------------------------------------------------------------------------
+// Nested Particles
+
+type NestedParticle interface {
+	aNestedParticle()
+}
+
+type nestedParticle struct{}
+
+func (*nestedParticle) aNestedParticle() {}

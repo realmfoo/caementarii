@@ -8,6 +8,7 @@ import (
 	"go/format"
 	"io"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -16,7 +17,10 @@ type Generator struct {
 }
 
 func (g *Generator) Generate(s *xsd.Schema, o io.Writer) error {
-	schema := parseSchema(s, g)
+	schema, err := parseSchema(s, g)
+	if err != nil {
+		return err
+	}
 
 	file := toGoFile(g.PkgName, schema)
 	w := new(bytes.Buffer)
@@ -57,12 +61,15 @@ func toGoFile(pkgName string, schema *schema) *File {
 	return f
 }
 
-func parseSchema(s *xsd.Schema, g *Generator) *schema {
+func parseSchema(s *xsd.Schema, g *Generator) (*schema, error) {
 	schema := newSchema(s)
 	for _, top := range s.SchemaTop {
 		if node, ok := top.(xsd.Element); ok {
 			// 3.3.2.1 Common Mapping Rules for Element Declarations
-			elm := g.newElement(schema, node)
+			elm, err := g.newElement(schema, &node)
+			if err != nil {
+				return nil, err
+			}
 
 			// 3.3.2.2 Mapping Rules for Top-Level Element Declarations
 			elm.name.Space = s.TargetNamespace
@@ -72,10 +79,12 @@ func parseSchema(s *xsd.Schema, g *Generator) *schema {
 			schema.elementDeclarations[elm.name] = elm
 		}
 	}
-	return schema
+	return schema, nil
 }
 
-func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.ComplexType) *complexTypeDefinition {
+func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.ComplexType) (*complexTypeDefinition, error) {
+	var err error
+
 	typeDef := complexTypeDefinition{}
 
 	// The ·actual value· of the name [attribute].
@@ -116,12 +125,18 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 		if node.SimpleContent.Restriction != nil {
 			// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 			// <extension> element appearing as a child of <simpleContent>
-			typeDef.baseTypeDefinition = g.resolveType(s, s.resolveQName(node.SimpleContent.Restriction.Base))
+			typeDef.baseTypeDefinition, err = g.resolveType(s, s.resolveQName(node.SimpleContent.Restriction.Base))
+			if err != nil {
+				return nil, err
+			}
 			typeDef.derivationMethod = "restriction"
 		} else {
 			// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 			// <extension> element appearing as a child of <simpleContent>
-			typeDef.baseTypeDefinition = g.resolveType(s, s.resolveQName(node.SimpleContent.Extension.Base))
+			typeDef.baseTypeDefinition, err = g.resolveType(s, s.resolveQName(node.SimpleContent.Extension.Base))
+			if err != nil {
+				return nil, err
+			}
 			typeDef.derivationMethod = "extension"
 		}
 
@@ -180,45 +195,108 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 			if node.ComplexContent.Restriction != nil {
 				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 				// <extension> element appearing as a child of <simpleContent>
-				typeDef.baseTypeDefinition = g.resolveType(s, s.resolveQName(node.ComplexContent.Restriction.Base))
+				typeDef.baseTypeDefinition, err = g.resolveType(s, s.resolveQName(node.ComplexContent.Restriction.Base))
+				if err != nil {
+					return nil, err
+				}
 				typeDef.derivationMethod = "restriction"
 			} else {
 				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 				// <extension> element appearing as a child of <simpleContent>
-				typeDef.baseTypeDefinition = g.resolveType(s, s.resolveQName(node.ComplexContent.Extension.Base))
+				typeDef.baseTypeDefinition, err = g.resolveType(s, s.resolveQName(node.ComplexContent.Extension.Base))
+				if err != nil {
+					return nil, err
+				}
 				typeDef.derivationMethod = "extension"
 			}
 		} else {
 			// 3.4.2.3.2 Mapping Rules for Complex Types with Implicit Complex Content
-			typeDef.baseTypeDefinition = nil
+			typeDef.baseTypeDefinition = anyType
 			typeDef.derivationMethod = "restriction"
 		}
 
 		// 3.4.2.3.3 Mapping Rules for Content Type Property of Complex Content
-		//effectiveMixed := false
-		//if node.ComplexContent.Mixed != nil {
-		//	effectiveMixed = *node.ComplexContent.Mixed
-		//} else if node.Mixed != nil {
-		//	effectiveMixed = *node.Mixed
-		//}
+		effectiveMixed := false
+		if node.ComplexContent != nil && node.ComplexContent.Mixed != nil {
+			effectiveMixed = *node.ComplexContent.Mixed
+		} else if node.Mixed != nil {
+			effectiveMixed = *node.Mixed
+		}
 
-		//var explicitContent interface{}
+		var explicitContent *particle
+		explicitContent = nil
+		if node.ComplexContent != nil {
+		} else {
+			if node.Sequence != nil {
+				explicitContent, err = g.newSequenceParticle(s, node, node.Sequence)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
 
+		fmt.Printf("effective mixed: %v\n", effectiveMixed)
+		fmt.Printf("explicit content: %v\n", explicitContent)
 	}
 
-	return &typeDef
+	return &typeDef, nil
+}
+
+func (g *Generator) newSequenceParticle(s *schema, parent interface{}, node *xsd.Sequence) (*particle, error) {
+	m := &modelGroup{
+		compositor: "sequence",
+	}
+	p := &particle{
+		minOccurs: node.MinOccurs,
+		maxOccurs: node.MaxOccurs,
+		term:      m,
+	}
+
+	for _, child := range node.Content {
+		switch t := child.(type) {
+		case *xsd.Element:
+			x, err := g.newLocalElement(s, t)
+			if err != nil {
+				return nil, err
+			}
+			m.particles = append(m.particles, x)
+		}
+	}
+
+	return p, nil
+}
+
+func (g *Generator) newLocalElement(s *schema, node *xsd.Element) (*particle, error) {
+	var err error
+
+	p := &particle{minOccurs: 1, maxOccurs: 1}
+	if node.MinOccurs != nil {
+		p.minOccurs = *node.MinOccurs
+	}
+	if node.MaxOccurs != nil {
+		if *node.MaxOccurs == "unbounded" {
+			p.maxOccurs = unbounded
+		} else {
+			p.maxOccurs, err = strconv.Atoi(*node.MaxOccurs)
+			if err != nil {
+				return nil, fmt.Errorf("Invalid maxOccurs attribute value: ", err)
+			}
+		}
+	}
+	p.term, err = g.newElement(s, node)
+	return p, err
 }
 
 // resolveType resolves a qname into Type Definition
-func (g *Generator) resolveType(s *schema, name xml.Name) TypeDefinition {
+func (g *Generator) resolveType(s *schema, name xml.Name) (TypeDefinition, error) {
 	// Check if type is a built-in type
 	if typeDef, ok := xmlTypes[name]; ok {
-		return typeDef
+		return typeDef, nil
 	}
 
 	// Check if type is already parsed
 	if typeDef, ok := s.typeDefinitions[name]; ok {
-		return typeDef
+		return typeDef, nil
 	}
 
 	// Find and parse type definition
@@ -235,7 +313,7 @@ func (g *Generator) resolveType(s *schema, name xml.Name) TypeDefinition {
 		}
 	}
 	fmt.Println("Not found", name)
-	return nil
+	return nil, nil
 }
 
 func getBlocks(node *xsd.ComplexType, s *schema, typeDef complexTypeDefinition) []string {
@@ -287,8 +365,10 @@ func getFinals(node *xsd.ComplexType, s *schema, typeDef complexTypeDefinition) 
 }
 
 // 3.3.2.1 Common Mapping Rules for Element Declarations
-func (g *Generator) newElement(s *schema, node xsd.Element) elementDeclaration {
-	elm := elementDeclaration{}
+func (g *Generator) newElement(s *schema, node *xsd.Element) (*elementDeclaration, error) {
+	var err error
+
+	elm := &elementDeclaration{}
 	// The ·actual value· of the name [attribute].
 	elm.name.Local = node.Name
 	// The first of the following that applies:
@@ -299,11 +379,17 @@ func (g *Generator) newElement(s *schema, node xsd.Element) elementDeclaration {
 	//   ·actual value· of the substitutionGroup [attribute], if present.
 	// 4 ·xs:anyType·.
 	if node.ComplexType != nil {
-		elm.typeDefinition = g.newComplexType(s, node, node.ComplexType)
+		elm.typeDefinition, err = g.newComplexType(s, node, node.ComplexType)
+		if err != nil {
+			return nil, err
+		}
 	} else if node.SimpleType != nil {
 
 	} else if node.Type != "" {
-		elm.typeDefinition = g.resolveType(s, s.resolveQName(node.Type))
+		elm.typeDefinition, err = g.resolveType(s, s.resolveQName(node.Type))
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		elm.typeDefinition = nil
 	}
@@ -363,7 +449,7 @@ func (g *Generator) newElement(s *schema, node xsd.Element) elementDeclaration {
 	// The ·annotation mapping· of the <element> element and any of its <unique>, <key> and <keyref> [children]
 	// with a ref [attribute], as defined in XML Representation of Annotation Schema Components (§3.15.2).
 	// elm.annotations
-	return elm
+	return elm, nil
 }
 
 func normalizeValue(s string) string {

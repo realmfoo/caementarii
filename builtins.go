@@ -21,13 +21,13 @@ var anyType = &complexTypeDefinition{
 		particle: &particle{
 			minOccurs: 1,
 			maxOccurs: 1,
-			term: modelGroup{
+			term: &modelGroup{
 				compositor: "sequence",
-				particles: []particle{
+				particles: []*particle{
 					{
 						minOccurs: 0,
-						maxOccurs: unbound,
-						term: wildcard{
+						maxOccurs: unbounded,
+						term: &wildcard{
 							namespaceConstraint: wildcardNamespaceConstraint{
 								variety:         "any",
 								namespaces:      []string{},
@@ -52,8 +52,10 @@ var anyType = &complexTypeDefinition{
 	final: []string{},
 	prohibitedSubstitutions: []string{},
 	assertions:              []assertion{},
-	annotations:             []annotation{},
-	abstract:                false,
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	abstract: false,
 }
 
 var anySimpleType = &simpleTypeDefinition{
@@ -62,7 +64,9 @@ var anySimpleType = &simpleTypeDefinition{
 	facets:             []ConstrainingFacet{},
 	baseTypeDefinition: anyType,
 	fundamentalFacets:  []FundamentalFacet{},
-	annotations:        []annotation{},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
 }
 
 var anyAtomicType = &simpleTypeDefinition{
@@ -72,7 +76,9 @@ var anyAtomicType = &simpleTypeDefinition{
 	facets:             []ConstrainingFacet{},
 	variety:            "atomic",
 	fundamentalFacets:  []FundamentalFacet{},
-	annotations:        []annotation{},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
 }
 
 var stringPrimitive = newPrimitive(
@@ -101,7 +107,9 @@ func newPrimitive(name string, facets []ConstrainingFacet, fundamentalFacets []F
 		variety:            "atomic",
 		facets:             facets,
 		fundamentalFacets:  fundamentalFacets,
-		annotations:        []annotation{},
+		annotatedComponent: annotatedComponent{
+			annotations: []annotation{},
+		},
 	}
 	t.primitiveTypeDefinition = t
 	return t
