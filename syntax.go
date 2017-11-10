@@ -101,7 +101,6 @@ type (
 	// struct { FieldList[0] TagList[0]; FieldList[1] TagList[1]; ... }
 	StructType struct {
 		FieldList []*Field
-		TagList   []*BasicLit // i >= len(TagList) || TagList[i] == nil means no tag for field i
 		expr
 	}
 
@@ -110,6 +109,7 @@ type (
 	Field struct {
 		Name *Name // nil means anonymous field/parameter (structs/parameters), or embedded interface (interfaces)
 		Type Expr  // field names declared in a list share the same Type (identical pointers)
+		Tags map[string]string
 		node
 	}
 

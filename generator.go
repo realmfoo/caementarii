@@ -44,15 +44,34 @@ func toGoFile(pkgName string, schema *schema) *File {
 			Name: &Name{Value: strings.Title(elm.name.Local)},
 		}
 
-		if typeDef, ok := elm.typeDefinition.(*simpleTypeDefinition); ok {
+		switch typeDef := elm.typeDefinition.(type) {
+		case *simpleTypeDefinition:
 			decl.Type = &Name{Value: typeDef.primitiveTypeDefinition.goType}
 			f.Require("encoding/xml")
 			f.DeclList = append(f.DeclList, &VarDecl{
 				NameList: []*Name{{Value: "ns" + decl.Name.Value}},
 				Values:   &BasicLit{Value: `xml.Name{Space: "` + elm.name.Space + `", Local: "` + elm.name.Local + `"}`},
 			})
-		} else {
-			decl.Type = &StructType{}
+		case *complexTypeDefinition:
+			f.Require("encoding/xml")
+			decl.Type = &StructType{
+				FieldList: []*Field{
+					{
+						Name: &Name{Value: "XMLName"},
+						Type: &BasicLit{Value: `xml.Name`},
+						Tags: map[string]string{
+							"xml": elm.name.Space + " " + elm.name.Local,
+						},
+					},
+				},
+			}
+			p := typeDef.contentType.particle
+			if p != nil {
+				switch term := p.term.(type) {
+				case *modelGroup:
+					fmt.Printf("%+v\n", term.particles)
+				}
+			}
 		}
 
 		f.DeclList = append(f.DeclList, decl)
@@ -235,8 +254,36 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 			}
 		}
 
-		fmt.Printf("effective mixed: %v\n", effectiveMixed)
-		fmt.Printf("explicit content: %v\n", explicitContent)
+		effectiveContent := explicitContent
+
+		var explicitContentType complexTypeContentType
+		if typeDef.derivationMethod == "restriction" {
+			if effectiveContent == nil {
+				explicitContentType = complexTypeContentType{
+					variety: "empty",
+				}
+			} else {
+				variety := "element-only"
+				if effectiveMixed {
+					variety = "mixed"
+				}
+				explicitContentType = complexTypeContentType{
+					variety:  variety,
+					particle: effectiveContent,
+				}
+			}
+		} else {
+			//
+		}
+
+		var wildcardElement *openContent
+		wildcardElement = nil
+
+		if wildcardElement == nil {
+			typeDef.contentType = explicitContentType
+		} else {
+			//
+		}
 	}
 
 	return &typeDef, nil

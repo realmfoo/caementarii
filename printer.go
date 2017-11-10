@@ -154,7 +154,7 @@ func (p *printer) printNode(n Node) {
 		p.print(_Lbrace)
 		if len(n.FieldList) > 0 {
 			p.print(newline, indent)
-			p.printFieldList(n.FieldList, n.TagList)
+			p.printFieldList(n.FieldList)
 			p.print(outdent, newline)
 		}
 		p.print(_Rbrace)
@@ -171,40 +171,35 @@ func (p *printer) printNode(n Node) {
 	}
 }
 
-func (p *printer) printFields(fields []*Field, tags []*BasicLit, i, j int) {
-	if i+1 == j && fields[i].Name == nil {
+func (p *printer) printField(f *Field) {
+	if f.Name == nil {
 		// anonymous field
-		p.printNode(fields[i].Type)
+		p.printNode(f.Type)
 	} else {
-		for k, f := range fields[i:j] {
-			if k > 0 {
-				p.print(_Comma, blank)
+		p.printNode(f.Name)
+		p.print(blank)
+		p.printNode(f.Type)
+		if len(f.Tags) > 0 {
+			p.print(blank)
+			p.print(_Name, "`")
+			needSpace := false
+			for key, value := range f.Tags {
+				if needSpace {
+					p.print(blank)
+				}
+				p.print(_Name, key, _Name, `:"`, _Name, value, _Name, `"`)
+				needSpace = true
 			}
-			p.printNode(f.Name)
+			p.print(_Name, "`")
 		}
-		p.print(blank)
-		p.printNode(fields[i].Type)
-	}
-	if i < len(tags) && tags[i] != nil {
-		p.print(blank)
-		p.printNode(tags[i])
 	}
 }
 
-func (p *printer) printFieldList(fields []*Field, tags []*BasicLit) {
-	i0 := 0
-	var typ Expr
-	for i, f := range fields {
-		if f.Name == nil || f.Type != typ {
-			if i0 < i {
-				p.printFields(fields, tags, i0, i)
-				p.print(_Semi, newline)
-				i0 = i
-			}
-			typ = f.Type
-		}
+func (p *printer) printFieldList(fields []*Field) {
+	for _, f := range fields {
+		p.printField(f)
+		p.print(_Semi, newline)
 	}
-	p.printFields(fields, tags, i0, len(fields))
 }
 
 func (p *printer) write(data []byte) {
