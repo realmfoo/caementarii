@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestSimple01(t *testing.T) {
+func TestSimple02(t *testing.T) {
 	data, err := ioutil.ReadFile("simple02.xsd")
 	if err != nil {
 		t.Fatal(err)

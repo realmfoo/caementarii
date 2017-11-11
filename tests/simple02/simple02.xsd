@@ -6,9 +6,9 @@
     <xs:element name="personName">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="title" minOccurs="0"/>
-                <xs:element name="forename" minOccurs="0" maxOccurs="unbounded"/>
-                <xs:element name="surname"/>
+                <xs:element name="title" type="xs:string" minOccurs="0"/>
+                <xs:element name="forename" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="surname" type="xs:string"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>

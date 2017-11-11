@@ -98,6 +98,18 @@ type (
 		expr
 	}
 
+	// []Elem
+	SliceType struct {
+		Elem Expr
+		expr
+	}
+
+	// *Elem
+	PointerType struct {
+		Elem Expr
+		expr
+	}
+
 	// struct { FieldList[0] TagList[0]; FieldList[1] TagList[1]; ... }
 	StructType struct {
 		FieldList []*Field

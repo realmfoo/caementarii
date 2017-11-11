@@ -146,6 +146,12 @@ func (p *printer) printNode(n Node) {
 			p.print(blank, _Assign, blank, n.Values)
 		}
 
+	case *SliceType:
+		p.print(_Lbrack, _Rbrack, n.Elem)
+
+	case *PointerType:
+		p.print(_Star, n.Elem)
+
 	case *StructType:
 		p.print(_Struct)
 		if len(n.FieldList) > 0 && p.linebreaks {
