@@ -40,7 +40,7 @@ var anyType = &complexTypeDefinition{
 			},
 		},
 	},
-	attributeUses: []attributeUse{},
+	attributeUses: []*attributeUse{},
 	attributeWildcard: wildcard{
 		namespaceConstraint: wildcardNamespaceConstraint{
 			variety:         "any",

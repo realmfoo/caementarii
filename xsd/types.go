@@ -20,7 +20,7 @@ type QName string
 type ListOfQName []QName
 
 // anyURI represents an Internationalized Resource Identifier Reference (IRI).
-type anyURI string
+type anyURI = string
 
 // {qualified, unqualified}
 type formChoice string
@@ -484,16 +484,16 @@ Loop:
 }
 
 type Attribute struct {
-	Default         string `xml:"default,attr"`
-	Fixed           string `xml:"fixed,attr"`
-	Form            string `xml:"form,attr"`
-	Id              string `xml:"id,attr"`
-	Name            string `xml:"name,attr"`
-	Ref             QName  `xml:"ref,attr"`
-	TargetNamespace anyURI `xml:"targetNamespace,attr"`
-	Type            QName  `xml:"type,attr"`
-	Use             string `xml:"use,attr"`
-	Inheritable     bool   `xml:"inheritable,attr"`
+	Default         *string `xml:"default,attr"`
+	Fixed           *string `xml:"fixed,attr"`
+	Form            string  `xml:"form,attr"`
+	Id              string  `xml:"id,attr"`
+	Name            string  `xml:"name,attr"`
+	Ref             QName   `xml:"ref,attr"`
+	TargetNamespace anyURI  `xml:"targetNamespace,attr"`
+	Type            string  `xml:"type,attr"`
+	Use             string  `xml:"use,attr"`
+	Inheritable     *bool   `xml:"inheritable,attr"`
 
 	Annotation *Annotation `xml:"annotation"`
 	SimpleType *SimpleType `xml:"simpleType"`

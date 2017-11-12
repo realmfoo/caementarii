@@ -340,7 +340,74 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 		}
 	}
 
+	// attributes
+	if node.ComplexContent != nil {
+	} else if node.SimpleContent != nil {
+	} else {
+		for _, attr := range node.Attributes {
+			a, err := g.newAttributeUse(s, typeDef, attr)
+			if err != nil {
+				return nil, err
+			}
+			typeDef.attributeUses = append(typeDef.attributeUses, a)
+		}
+	}
+
 	return &typeDef, nil
+}
+
+func (g *Generator) newAttributeUse(s *schema, parent interface{}, node xsd.Attribute) (*attributeUse, error) {
+	ns := ""
+	if node.TargetNamespace != "" {
+		ns = node.TargetNamespace
+	} else if node.Form == "qualified" || s.attributeFormDefault == "qualified" {
+		ns = s.targetNamespace
+	}
+	attr := &attributeDeclaration{
+		name: xml.Name{Space: ns, Local: node.Name},
+		scope: struct {
+			variety string
+			parent  interface{}
+		}{variety: "local", parent: parent},
+	}
+
+	if node.Type != "" {
+		typeDef, err := g.resolveType(s, s.resolveQName(node.Type))
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := typeDef.(*simpleTypeDefinition); !ok {
+			return nil, fmt.Errorf("Attribute type should be simple type")
+		}
+		attr.typeDefinition = typeDef.(*simpleTypeDefinition)
+	} else {
+		attr.typeDefinition = anySimpleType
+	}
+
+	if node.Inheritable != nil {
+		attr.inheritable = *node.Inheritable
+	}
+
+	attrUse := &attributeUse{
+		required:             node.Use == "required",
+		attributeDeclaration: attr,
+	}
+
+	if node.Default != nil {
+		attrUse.valueConstraint = &valueConstraint{
+			variety: "default",
+		}
+	}
+	if node.Fixed != nil {
+		attrUse.valueConstraint = &valueConstraint{
+			variety: "fixed",
+		}
+	}
+	if node.Inheritable != nil {
+		attrUse.inheritable = *node.Inheritable
+	}
+
+	return attrUse, nil
 }
 
 func (g *Generator) newSequenceParticle(s *schema, parent interface{}, node *xsd.Sequence) (*particle, error) {

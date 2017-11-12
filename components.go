@@ -26,7 +26,7 @@ type attributeDeclaration struct {
 	// A name with optional target namespace.
 	name xml.Name
 	// A Simple Type Definition component. Required.
-	typeDefinition simpleTypeDefinition
+	typeDefinition *simpleTypeDefinition
 	scope          struct {
 		// One of {global, local}. Required.
 		variety string
@@ -142,7 +142,7 @@ type complexTypeDefinition struct {
 	// An xs:boolean value. Required.
 	abstract bool
 	// A set of Attribute Use components.
-	attributeUses []attributeUse
+	attributeUses []*attributeUse
 	// A Wildcard component. Optional.
 	attributeWildcard wildcard
 	// A Content Type property record. Required.
@@ -224,7 +224,7 @@ type attributeUse struct {
 	// An xs:boolean value. Required.
 	required bool
 	// An Attribute Declaration component. Required.
-	attributeDeclaration attributeDeclaration
+	attributeDeclaration *attributeDeclaration
 	// A Value Constraint property record. Optional.
 	valueConstraint *valueConstraint
 	// An xs:boolean value. Required.
@@ -330,10 +330,11 @@ type schema struct {
 
 	xsdSchema *xsd.Schema
 	// A map of known namespaces
-	prefixMap       map[string]string
-	targetNamespace string
-	blockDefault    string
-	finalDefault    string
+	prefixMap            map[string]string
+	targetNamespace      string
+	blockDefault         string
+	finalDefault         string
+	attributeFormDefault string
 }
 
 func newSchema(s *xsd.Schema) *schema {
