@@ -10,3 +10,9 @@ type PersonName struct {
 	Forename []string `xml:"forename"`
 	Surname  string   `xml:"surname"`
 }
+
+type Person struct {
+	XMLName     xml.Name `xml:"urn:caementarii:simple person"`
+	RequiredAge string   `xml:"requiredAge,attr"`
+	Age         *string  `xml:"age,attr,omitempty"`
+}

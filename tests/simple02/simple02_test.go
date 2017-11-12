@@ -52,6 +52,36 @@ func TestMarshaler(t *testing.T) {
 	}
 }
 
+func TestPersonMarshaler(t *testing.T) {
+	tests := []struct {
+		in  Person
+		out string
+	}{
+		{Person{RequiredAge: "15", Age: xsstring("10")}, `<person xmlns="urn:caementarii:simple" requiredAge="15" age="10"></person>`},
+		{Person{RequiredAge: "0"}, `<person xmlns="urn:caementarii:simple" requiredAge="0"></person>`},
+		{Person{}, `<person xmlns="urn:caementarii:simple" requiredAge=""></person>`},
+	}
+
+	for _, tt := range tests {
+		data, e := xml.Marshal(tt.in)
+		if e != nil {
+			t.Fatal(e)
+		}
+		assert.Equal(t, tt.out, string(data))
+
+		var r Person
+		e = xml.Unmarshal([]byte(tt.out), &r)
+		if e != nil {
+			t.Fatal(e)
+		}
+
+		tt.in.XMLName.Space = "urn:caementarii:simple"
+		tt.in.XMLName.Local = "person"
+		assert.Equal(t, tt.in, r)
+
+	}
+}
+
 func TestUnmarshaler(t *testing.T) {
 	ns := xml.Name{Space: "urn:caementarii:simple", Local: "personName"}
 	tests := []struct {
@@ -71,4 +101,8 @@ func TestUnmarshaler(t *testing.T) {
 
 		assert.Equal(t, tt.out, r)
 	}
+}
+
+func xsstring(s string) *string {
+	return &s
 }

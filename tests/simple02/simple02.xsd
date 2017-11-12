@@ -12,4 +12,10 @@
             </xs:sequence>
         </xs:complexType>
     </xs:element>
+    <xs:element name="person">
+        <xs:complexType>
+            <xs:attribute name="requiredAge" type="xs:integer" use="required"/>
+            <xs:attribute name="age" type="xs:integer"/>
+        </xs:complexType>
+    </xs:element>
 </xs:schema>
