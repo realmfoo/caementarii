@@ -126,7 +126,7 @@ func (p *printer) printNode(n Node) {
 
 	case *TypeDecl:
 		if n.Group == nil {
-			p.print(_Type, blank)
+			p.print(newline, _Type, blank)
 		}
 		p.print(n.Name, blank)
 		if n.Alias {

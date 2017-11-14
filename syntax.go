@@ -161,7 +161,7 @@ func (f *File) Require(path string) {
 
 func (f *File) HasImport(path string) bool {
 	for _, i := range f.Imports {
-		if i.(*ImportDecl).Path.Value == path {
+		if i.(*ImportDecl).Path.Value == `"`+path+`"` {
 			return true
 		}
 	}

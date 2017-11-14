@@ -3,12 +3,10 @@ package goxsd
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"github.com/realmfoo/caementarii/xsd"
 	"go/format"
 	"io"
-	"regexp"
-	"strconv"
+	"sort"
 	"strings"
 )
 
@@ -36,10 +34,25 @@ func (g *Generator) Generate(s *xsd.Schema, o io.Writer) error {
 	return nil
 }
 
+type xmlNames []xml.Name
+
+func (a xmlNames) Len() int           { return len(a) }
+func (a xmlNames) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a xmlNames) Less(i, j int) bool { return a[i].Local < a[j].Local }
+
 func toGoFile(pkgName string, schema *schema) *File {
 	f := &File{PkgName: pkgName}
 
-	for _, elm := range schema.elementDeclarations {
+	// Sort elements by local name
+	keys := make([]xml.Name, 0, len(schema.elementDeclarations))
+	for k := range schema.elementDeclarations {
+		keys = append(keys, k)
+	}
+	sort.Sort(xmlNames(keys))
+
+	// Generate types in alphabetical order
+	for _, key := range keys {
+		elm := schema.elementDeclarations[key]
 		typeName := makeTypeName(elm.name)
 		decl := &TypeDecl{
 			Name: &Name{Value: typeName},
@@ -85,6 +98,26 @@ func createElementDeclType(f *File, elm *elementDeclaration, typeName string) Ex
 					Type: &BasicLit{Value: `xml.Name`},
 					Tags: map[string]string{
 						"xml": xmlNameTag(elm.name),
+					},
+				},
+			)
+		}
+
+		for _, attr := range typeDef.attributeUses {
+			f.Require("encoding/xml")
+			var attrType Expr
+			tags := xmlNameTag(attr.attributeDeclaration.name) + ",attr"
+			attrType = &BasicLit{Value: attr.attributeDeclaration.typeDefinition.goType}
+			if !attr.required {
+				tags += ",omitempty"
+				attrType = &PointerType{Elem: attrType}
+			}
+			s.FieldList = append(s.FieldList,
+				&Field{
+					Name: &Name{Value: makeTypeName(attr.attributeDeclaration.name)},
+					Type: attrType,
+					Tags: map[string]string{
+						"xml": tags,
 					},
 				},
 			)
