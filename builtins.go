@@ -11,6 +11,7 @@ var xmlTypes = map[xml.Name]TypeDefinition{
 	anySimpleType.name:   anySimpleType,
 	anyAtomicType.name:   anyAtomicType,
 	stringPrimitive.name: stringPrimitive,
+	anyURIPrimitive.name: anyURIPrimitive,
 }
 
 var anyType = &complexTypeDefinition{
@@ -94,8 +95,22 @@ var stringPrimitive = newPrimitive(
 	},
 )
 
+var anyURIPrimitive = newPrimitive(
+	"anyURI",
+	[]ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse", fixed: true},
+	},
+	[]FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+)
+
 func init() {
 	stringPrimitive.goType = "string"
+	anyURIPrimitive.goType = "string"
 }
 
 // newPrimitive creates a new primitive type by a template.
