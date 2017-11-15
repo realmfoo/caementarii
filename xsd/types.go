@@ -193,12 +193,7 @@ func unmarshalNestedParticleGroupChoice(d *xml.Decoder, tok xml.Token) (NestedPa
 
 			//    <xs:element ref="xs:any"/>
 			default:
-				tok, err = skipToStartElement(d, tok)
-				if err != nil {
-					return r, tok, err
-				}
-
-				continue
+				d.Skip()
 			}
 
 			// read next token
@@ -235,56 +230,56 @@ func unmarshalSchemaTop(d *xml.Decoder, tok xml.Token) (interface{}, xml.Token, 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "simpleType"}:
 				x := SimpleType{}
 				if err = d.DecodeElement(&x, &t); err != nil {
-					return nil, tok, err
+					return nil, tok, fmt.Errorf("Failed to unmarshal <simpleType>: %s", err)
 				}
 				r = x
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "complexType"}:
 				x := ComplexType{}
 				if err = d.DecodeElement(&x, &t); err != nil {
-					return nil, tok, err
+					return nil, tok, fmt.Errorf("Failed to unmarshal <complexType>: %s", err)
 				}
 				r = x
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "group"}:
 				x := Group{}
 				if err = d.DecodeElement(&x, &t); err != nil {
-					return nil, tok, err
+					return nil, tok, fmt.Errorf("Failed to unmarshal <group>: %s", err)
 				}
 				r = x
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "attributeGroup"}:
 				x := AttributeGroup{}
 				if err = d.DecodeElement(&x, &t); err != nil {
-					return nil, tok, err
+					return nil, tok, fmt.Errorf("Failed to unmarshal <attributeGroup>: %s", err)
 				}
 				r = x
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "element"}:
 				x := Element{}
 				if err = d.DecodeElement(&x, &t); err != nil {
-					return nil, tok, err
+					return nil, tok, fmt.Errorf("Failed to unmarshal <element>: %s", err)
 				}
 				r = x
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "attribute"}:
 				x := Element{}
 				if err = d.DecodeElement(&x, &t); err != nil {
-					return nil, tok, err
+					return nil, tok, fmt.Errorf("Failed to unmarshal <attribute>: %s", err)
 				}
 				r = x
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "notation"}:
 				x := Element{}
 				if err = d.DecodeElement(&x, &t); err != nil {
-					return nil, tok, err
+					return nil, tok, fmt.Errorf("Failed to unmarshal <notation>: %s", err)
 				}
 				r = x
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "annotation"}:
 				x := Annotation{}
 				if err = d.DecodeElement(&x, &t); err != nil {
-					return nil, tok, err
+					return nil, tok, fmt.Errorf("Failed to unmarshal <annotation>: %s", err)
 				}
 				r = x
 
@@ -302,7 +297,7 @@ func unmarshalSchemaTop(d *xml.Decoder, tok xml.Token) (interface{}, xml.Token, 
 			return r, tok, nil
 
 		case xml.EndElement:
-			return nil, tok, err
+			return nil, tok, nil
 		}
 
 		// read next token until xml.StartElement
