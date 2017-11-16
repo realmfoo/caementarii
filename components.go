@@ -2,12 +2,21 @@ package goxsd
 
 import (
 	"encoding/xml"
+	"fmt"
 	"github.com/realmfoo/caementarii/xsd"
 	"math"
 	"strings"
 )
 
 var unbounded = math.MaxInt32
+
+const (
+	prefixXml = "xml"
+	nsXml     = "http://www.w3.org/XML/1998/namespace"
+
+	prefixXmlns = "xmlns"
+	nsXmlns     = "http://www.w3.org/2000/xmlns/"
+)
 
 type TypeDefinition interface {
 	aTypeDef()
@@ -337,10 +346,30 @@ type schema struct {
 	attributeFormDefault string
 }
 
+func checkPrefixNamespaceConstraint(prefix string, ns string) bool {
+	if prefix == prefixXml || ns == nsXml {
+		if ns != nsXml {
+			fmt.Printf("The prefix xml is by definition bound to the namespace name http://www.w3.org/XML/1998/namespace. It may, but need not, be declared, and must not be undeclared or bound to any other namespace name. Other prefixes must not be bound to this namespace name")
+		}
+		return false
+	}
+
+	if prefix == prefixXmlns || ns == nsXmlns {
+		fmt.Println("The prefix xmlns is used only to declare namespace bindings and is by definition bound to the namespace name http://www.w3.org/2000/xmlns/. It must not be declared or undeclared. Other prefixes must not be bound to this namespace name.")
+		return false
+	}
+
+	return true
+}
+
 func newSchema(s *xsd.Schema) *schema {
-	prefixMap := make(map[string]string, 0)
+	prefixMap := make(map[string]string, 3)
+	prefixMap["xml"] = nsXml
 	for _, attr := range s.XMLAttrs {
 		if attr.Name.Space == "xmlns" {
+			if !checkPrefixNamespaceConstraint(attr.Name.Local, attr.Value) {
+				continue
+			}
 			prefixMap[attr.Name.Local] = attr.Value
 		}
 	}
@@ -360,6 +389,10 @@ func (s *schema) resolveQName(qname xsd.QName) (name xml.Name) {
 		name.Local = p[0]
 	} else {
 		name.Space = s.prefixMap[p[0]]
+		if name.Space == "" {
+			fmt.Printf("Unknown namespace prefix: %s\n", qname)
+			name.Space = p[0]
+		}
 		name.Local = p[1]
 	}
 	return

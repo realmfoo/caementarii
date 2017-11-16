@@ -271,7 +271,7 @@ func (g *Generator) newAttributeUse(s *schema, parent interface{}, node xsd.Attr
 
 func (g *Generator) resolveAttribute(s *schema, name xml.Name) (*attributeDeclaration, error) {
 	// Find and parse type definition
-	if s.targetNamespace == s.targetNamespace {
+	if s.targetNamespace == name.Space {
 		for _, top := range s.xsdSchema.SchemaTop {
 			switch t := top.(type) {
 			case xsd.Attribute:
@@ -281,9 +281,7 @@ func (g *Generator) resolveAttribute(s *schema, name xml.Name) (*attributeDeclar
 			}
 		}
 	}
-	fmt.Println("Not found", name)
-	return nil, nil
-
+	return nil, fmt.Errorf("Broken reference to attribute %+v", name)
 }
 
 func (g *Generator) newAttributeDeclaration(s *schema, parent interface{}, node *xsd.Attribute) (*attributeDeclaration, error) {
@@ -384,7 +382,7 @@ func (g *Generator) resolveType(s *schema, name xml.Name) (TypeDefinition, error
 	}
 
 	// Find and parse type definition
-	if s.targetNamespace == s.targetNamespace {
+	if s.targetNamespace == name.Space {
 		for _, top := range s.xsdSchema.SchemaTop {
 			switch t := top.(type) {
 			case xsd.SimpleType:

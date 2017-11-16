@@ -27,5 +27,8 @@ func TestGenerator(t *testing.T) {
 	g := Generator{
 		PkgName: "xmlschema",
 	}
-	g.Generate(&s, w)
+	err = g.Generate(&s, w)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
