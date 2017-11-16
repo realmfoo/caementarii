@@ -223,7 +223,8 @@ var (
 
 func (p *printer) writeBytes(data []byte) {
 	if len(data) == 0 {
-		panic("expected non-empty []byte")
+		//panic("expected non-empty []byte")
+		return
 	}
 	p.write(data)
 }

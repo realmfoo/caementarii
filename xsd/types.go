@@ -14,7 +14,7 @@ var unbounded = math.MaxInt32
 type NCName string
 
 // QName represents XML qualified names.
-type QName string
+type QName = string
 
 // A list of QName
 type ListOfQName []QName
@@ -263,14 +263,14 @@ func unmarshalSchemaTop(d *xml.Decoder, tok xml.Token) (interface{}, xml.Token, 
 				r = x
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "attribute"}:
-				x := Element{}
+				x := Attribute{}
 				if err = d.DecodeElement(&x, &t); err != nil {
 					return nil, tok, fmt.Errorf("Failed to unmarshal <attribute>: %s", err)
 				}
 				r = x
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "notation"}:
-				x := Element{}
+				x := Notation{}
 				if err = d.DecodeElement(&x, &t); err != nil {
 					return nil, tok, fmt.Errorf("Failed to unmarshal <notation>: %s", err)
 				}
@@ -486,7 +486,7 @@ type Attribute struct {
 	Name            string  `xml:"name,attr"`
 	Ref             QName   `xml:"ref,attr"`
 	TargetNamespace anyURI  `xml:"targetNamespace,attr"`
-	Type            string  `xml:"type,attr"`
+	Type            QName   `xml:"type,attr"`
 	Use             string  `xml:"use,attr"`
 	Inheritable     *bool   `xml:"inheritable,attr"`
 
@@ -695,7 +695,7 @@ type Element struct {
 	Ref               string  `xml:"ref,attr"`
 	SubstitutionGroup string  `xml:"substitutionGroup"`
 	TargetNamespace   string  `xml:"targetNamespace,attr"`
-	Type              string  `xml:"type,attr"`
+	Type              QName   `xml:"type,attr"`
 
 	Annotation  *Annotation  `xml:"annotation"`
 	SimpleType  *SimpleType  `xml:"simpleType"`
@@ -782,7 +782,7 @@ type SimpleContent struct {
 
 	Annotation  *Annotation `xml:"annotation"`
 	Restriction *struct {
-		Base string `xml:"base,attr"`
+		Base QName  `xml:"base,attr"`
 		Id   string `xml:"id,attr"`
 
 		Annotation      *Annotation      `xml:"annotation"`

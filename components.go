@@ -354,7 +354,7 @@ func newSchema(s *xsd.Schema) *schema {
 }
 
 // resolveQName resolves a QName value into xml.Name struct
-func (s *schema) resolveQName(qname string) (name xml.Name) {
+func (s *schema) resolveQName(qname xsd.QName) (name xml.Name) {
 	p := strings.SplitN(qname, ":", 2)
 	if len(p) == 1 {
 		name.Local = p[0]

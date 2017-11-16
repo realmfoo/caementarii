@@ -231,35 +231,18 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 }
 
 func (g *Generator) newAttributeUse(s *schema, parent interface{}, node xsd.Attribute) (*attributeUse, error) {
-	ns := ""
-	if node.TargetNamespace != "" {
-		ns = node.TargetNamespace
-	} else if node.Form == "qualified" || s.attributeFormDefault == "qualified" {
-		ns = s.targetNamespace
-	}
-	attr := &attributeDeclaration{
-		name: xml.Name{Space: ns, Local: node.Name},
-		scope: struct {
-			variety string
-			parent  interface{}
-		}{variety: "local", parent: parent},
-	}
-
-	if node.Type != "" {
-		typeDef, err := g.resolveType(s, s.resolveQName(node.Type))
+	var attr *attributeDeclaration
+	var err error
+	if node.Ref != "" {
+		attr, err = g.resolveAttribute(s, s.resolveQName(node.Ref))
 		if err != nil {
 			return nil, err
 		}
-		if _, ok := typeDef.(*simpleTypeDefinition); !ok {
-			return nil, fmt.Errorf("Attribute type should be simple type")
-		}
-		attr.typeDefinition = typeDef.(*simpleTypeDefinition)
 	} else {
-		attr.typeDefinition = anySimpleType
-	}
-
-	if node.Inheritable != nil {
-		attr.inheritable = *node.Inheritable
+		attr, err = g.newAttributeDeclaration(s, parent, &node)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	attrUse := &attributeUse{
@@ -279,9 +262,68 @@ func (g *Generator) newAttributeUse(s *schema, parent interface{}, node xsd.Attr
 	}
 	if node.Inheritable != nil {
 		attrUse.inheritable = *node.Inheritable
+	} else {
+		attrUse.inheritable = attr.inheritable
 	}
 
 	return attrUse, nil
+}
+
+func (g *Generator) resolveAttribute(s *schema, name xml.Name) (*attributeDeclaration, error) {
+	// Find and parse type definition
+	if s.targetNamespace == s.targetNamespace {
+		for _, top := range s.xsdSchema.SchemaTop {
+			switch t := top.(type) {
+			case xsd.Attribute:
+				if t.Name == name.Local {
+					return g.newAttributeDeclaration(s, nil, &t)
+				}
+			}
+		}
+	}
+	fmt.Println("Not found", name)
+	return nil, nil
+
+}
+
+func (g *Generator) newAttributeDeclaration(s *schema, parent interface{}, node *xsd.Attribute) (*attributeDeclaration, error) {
+	ns := ""
+	if node.TargetNamespace != "" {
+		ns = node.TargetNamespace
+	} else if node.Form == "qualified" || s.attributeFormDefault == "qualified" {
+		ns = s.targetNamespace
+	}
+	scope := struct {
+		variety string
+		parent  interface{}
+	}{variety: "local", parent: parent}
+	if parent == nil {
+		scope.variety = "global"
+	}
+
+	attr := &attributeDeclaration{
+		name:  xml.Name{Space: ns, Local: node.Name},
+		scope: scope,
+	}
+
+	if node.Type != "" {
+		typeDef, err := g.resolveType(s, s.resolveQName(node.Type))
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := typeDef.(*simpleTypeDefinition); !ok {
+			return nil, fmt.Errorf("Attribute type should be simple type")
+		}
+		attr.typeDefinition = typeDef.(*simpleTypeDefinition)
+	} else {
+		attr.typeDefinition = anySimpleType
+	}
+
+	if node.Inheritable != nil {
+		attr.inheritable = *node.Inheritable
+	}
+
+	return attr, nil
 }
 
 func (g *Generator) newSequenceParticle(s *schema, parent interface{}, node *xsd.Sequence) (*particle, error) {
