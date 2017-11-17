@@ -11,7 +11,9 @@ import (
 )
 
 type Generator struct {
-	PkgName string
+	PkgName        string
+	ImportResolver func(namespace string, schemaLocation string) (*xsd.Schema, error)
+	schemas        map[string]*schema
 }
 
 func (g *Generator) Generate(s *xsd.Schema, o io.Writer) error {

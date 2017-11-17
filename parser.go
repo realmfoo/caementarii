@@ -9,26 +9,69 @@ import (
 	"strings"
 )
 
-func parseSchema(s *xsd.Schema, g *Generator) (*schema, error) {
-	schema := newSchema(s)
-	for _, top := range s.SchemaTop {
+func parseSchema(xs *xsd.Schema, g *Generator) (*schema, error) {
+	s := newSchema(xs)
+	g.schemas = make(map[string]*schema, 4)
+	g.schemas[s.targetNamespace] = s
+	err := processImports(xs, g, g.schemas)
+	if err != nil {
+		return nil, err
+	}
+	for _, top := range xs.SchemaTop {
 		if node, ok := top.(xsd.Element); ok {
 			// 3.3.2.1 Common Mapping Rules for Element Declarations
-			elm, err := g.newElement(schema, &node)
+			elm, err := g.newElement(s, &node)
 			if err != nil {
 				return nil, err
 			}
 
 			// 3.3.2.2 Mapping Rules for Top-Level Element Declarations
-			elm.name.Space = s.TargetNamespace
+			elm.name.Space = xs.TargetNamespace
 
 			elm.scope.variety = "global"
 
-			schema.elementDeclarations[elm.name] = elm
+			s.elementDeclarations[elm.name] = elm
 		}
 	}
-	return schema, nil
+	return s, nil
 }
+
+func processImports(xs *xsd.Schema, g *Generator, schemas map[string]*schema) error {
+	for _, composition := range xs.Composition {
+		if node, ok := composition.(xsd.Import); ok {
+			if node.Namespace != "" || node.SchemaLocation != "" {
+				ns := node.Namespace
+				if ns != "" {
+					if _, ok := schemas[ns]; ok {
+						continue
+					}
+				}
+
+				es, err := g.ImportResolver(node.Namespace, node.SchemaLocation)
+				if err != nil {
+					return err
+				}
+				if ns == "" {
+					ns = es.TargetNamespace
+				} else if es.TargetNamespace != ns {
+					return fmt.Errorf("Referenced XMLSchema has different targetNamespace. Expected {}, but found {}", ns, es.TargetNamespace)
+				}
+
+				if _, ok := schemas[ns]; ok {
+					continue
+				}
+
+				schemas[ns] = newSchema(es)
+				if err := processImports(es, g, schemas); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.ComplexType) (*complexTypeDefinition, error) {
 	var err error
 
@@ -72,7 +115,7 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 		if node.SimpleContent.Restriction != nil {
 			// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 			// <extension> element appearing as a child of <simpleContent>
-			typeDef.baseTypeDefinition, err = g.resolveType(s, s.resolveQName(node.SimpleContent.Restriction.Base))
+			typeDef.baseTypeDefinition, err = g.resolveType(s.resolveQName(node.SimpleContent.Restriction.Base))
 			if err != nil {
 				return nil, err
 			}
@@ -80,7 +123,7 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 		} else {
 			// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 			// <extension> element appearing as a child of <simpleContent>
-			typeDef.baseTypeDefinition, err = g.resolveType(s, s.resolveQName(node.SimpleContent.Extension.Base))
+			typeDef.baseTypeDefinition, err = g.resolveType(s.resolveQName(node.SimpleContent.Extension.Base))
 			if err != nil {
 				return nil, err
 			}
@@ -142,7 +185,7 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 			if node.ComplexContent.Restriction != nil {
 				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 				// <extension> element appearing as a child of <simpleContent>
-				typeDef.baseTypeDefinition, err = g.resolveType(s, s.resolveQName(node.ComplexContent.Restriction.Base))
+				typeDef.baseTypeDefinition, err = g.resolveType(s.resolveQName(node.ComplexContent.Restriction.Base))
 				if err != nil {
 					return nil, err
 				}
@@ -150,7 +193,7 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 			} else {
 				// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
 				// <extension> element appearing as a child of <simpleContent>
-				typeDef.baseTypeDefinition, err = g.resolveType(s, s.resolveQName(node.ComplexContent.Extension.Base))
+				typeDef.baseTypeDefinition, err = g.resolveType(s.resolveQName(node.ComplexContent.Extension.Base))
 				if err != nil {
 					return nil, err
 				}
@@ -234,7 +277,7 @@ func (g *Generator) newAttributeUse(s *schema, parent interface{}, node xsd.Attr
 	var attr *attributeDeclaration
 	var err error
 	if node.Ref != "" {
-		attr, err = g.resolveAttribute(s, s.resolveQName(node.Ref))
+		attr, err = g.resolveAttribute(s.resolveQName(node.Ref))
 		if err != nil {
 			return nil, err
 		}
@@ -269,18 +312,21 @@ func (g *Generator) newAttributeUse(s *schema, parent interface{}, node xsd.Attr
 	return attrUse, nil
 }
 
-func (g *Generator) resolveAttribute(s *schema, name xml.Name) (*attributeDeclaration, error) {
+func (g *Generator) resolveAttribute(name xml.Name) (*attributeDeclaration, error) {
 	// Find and parse type definition
-	if s.targetNamespace == name.Space {
-		for _, top := range s.xsdSchema.SchemaTop {
-			switch t := top.(type) {
-			case xsd.Attribute:
-				if t.Name == name.Local {
-					return g.newAttributeDeclaration(s, nil, &t)
+	for _, s := range g.schemas {
+		if s.targetNamespace == name.Space {
+			for _, top := range s.xsdSchema.SchemaTop {
+				switch t := top.(type) {
+				case xsd.Attribute:
+					if t.Name == name.Local {
+						return g.newAttributeDeclaration(s, nil, &t)
+					}
 				}
 			}
 		}
 	}
+
 	return nil, fmt.Errorf("Broken reference to attribute %+v", name)
 }
 
@@ -305,7 +351,7 @@ func (g *Generator) newAttributeDeclaration(s *schema, parent interface{}, node 
 	}
 
 	if node.Type != "" {
-		typeDef, err := g.resolveType(s, s.resolveQName(node.Type))
+		typeDef, err := g.resolveType(s.resolveQName(node.Type))
 		if err != nil {
 			return nil, err
 		}
@@ -370,30 +416,33 @@ func (g *Generator) newLocalElement(s *schema, node *xsd.Element) (*particle, er
 }
 
 // resolveType resolves a qname into Type Definition
-func (g *Generator) resolveType(s *schema, name xml.Name) (TypeDefinition, error) {
+func (g *Generator) resolveType(name xml.Name) (TypeDefinition, error) {
 	// Check if type is a built-in type
 	if typeDef, ok := xmlTypes[name]; ok {
 		return typeDef, nil
 	}
 
 	// Check if type is already parsed
-	if typeDef, ok := s.typeDefinitions[name]; ok {
-		return typeDef, nil
-	}
+	for _, s := range g.schemas {
+		if typeDef, ok := s.typeDefinitions[name]; ok {
+			return typeDef, nil
+		}
 
-	// Find and parse type definition
-	if s.targetNamespace == name.Space {
-		for _, top := range s.xsdSchema.SchemaTop {
-			switch t := top.(type) {
-			case xsd.SimpleType:
-				//
-			case xsd.ComplexType:
-				if t.Name == name.Local {
-					return g.newComplexType(s, nil, &t)
+		// Find and parse type definition
+		if s.targetNamespace == name.Space {
+			for _, top := range s.xsdSchema.SchemaTop {
+				switch t := top.(type) {
+				case xsd.SimpleType:
+					//
+				case xsd.ComplexType:
+					if t.Name == name.Local {
+						return g.newComplexType(s, nil, &t)
+					}
 				}
 			}
 		}
 	}
+
 	fmt.Println("Not found", name)
 	return nil, nil
 }
@@ -468,7 +517,7 @@ func (g *Generator) newElement(s *schema, node *xsd.Element) (*elementDeclaratio
 	} else if node.SimpleType != nil {
 
 	} else if node.Type != "" {
-		elm.typeDefinition, err = g.resolveType(s, s.resolveQName(node.Type))
+		elm.typeDefinition, err = g.resolveType(s.resolveQName(node.Type))
 		if err != nil {
 			return nil, err
 		}

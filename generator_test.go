@@ -3,6 +3,7 @@ package goxsd
 import (
 	"bufio"
 	"encoding/xml"
+	"fmt"
 	"github.com/realmfoo/caementarii/xsd"
 	"io/ioutil"
 	"os"
@@ -26,6 +27,23 @@ func TestGenerator(t *testing.T) {
 
 	g := Generator{
 		PkgName: "xmlschema",
+		ImportResolver: func(namespace string, schemaLocation string) (*xsd.Schema, error) {
+			if namespace != nsXml {
+				return nil, fmt.Errorf("Could not find a location of {}", namespace)
+			}
+
+			data, err := ioutil.ReadFile("tests/xmlschema/xml.xsd")
+			if err != nil {
+				return nil, err
+			}
+
+			s := xsd.Schema{}
+			err = xml.Unmarshal(data, &s)
+			if err != nil {
+				return nil, err
+			}
+			return &s, nil
+		},
 	}
 	err = g.Generate(&s, w)
 	if err != nil {
