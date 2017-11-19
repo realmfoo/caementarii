@@ -327,7 +327,7 @@ func (g *Generator) resolveAttribute(name xml.Name) (*attributeDeclaration, erro
 		}
 	}
 
-	return nil, fmt.Errorf("Broken reference to attribute %+v", name)
+	return nil, fmt.Errorf("Error resolving component '%s'.", xmlNameAsString(name))
 }
 
 func (g *Generator) newAttributeDeclaration(s *schema, parent interface{}, node *xsd.Attribute) (*attributeDeclaration, error) {
@@ -589,4 +589,11 @@ func normalizeValue(s string) string {
 	// collapse
 	r = strings.Trim(regexp.MustCompile(" +").ReplaceAllString(r, " "), " ")
 	return r
+}
+
+func xmlNameAsString(name xml.Name) string {
+	if name.Space == "" {
+		return name.Local
+	}
+	return "{" + name.Space + "}" + name.Local
 }

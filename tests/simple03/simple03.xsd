@@ -1,17 +1,18 @@
 <?xml version='1.0'?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="urn:caementarii:simple"
            elementFormDefault="qualified"
            targetNamespace="urn:caementarii:simple"
            version="1.0">
     <xs:attribute name="age" type="xs:string"/>
     <xs:element name="testOptional">
         <xs:complexType>
-            <xs:attribute ref="age"/>
+            <xs:attribute ref="tns:age"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="testRequired">
         <xs:complexType>
-            <xs:attribute ref="age" use="required"/>
+            <xs:attribute ref="tns:age" use="required"/>
         </xs:complexType>
     </xs:element>
 </xs:schema>

@@ -27,7 +27,10 @@ func TestSimple03(t *testing.T) {
 	g := goxsd.Generator{
 		PkgName: "simple03",
 	}
-	g.Generate(&s, buf)
+	err = g.Generate(&s, buf)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	expected, _ := ioutil.ReadFile("simple03.go")
 	assert.Equal(t, string(expected), buf.String())
