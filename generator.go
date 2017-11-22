@@ -87,78 +87,87 @@ func createElementDeclType(f *File, elm *elementDeclaration, typeName string) Ex
 			})
 		}
 	case *complexTypeDefinition:
-		s := &StructType{
-			FieldList: []*Field{},
-		}
-
-		// If it's a root type definition then add an XMLName field.
-		if typeName != "" {
-			f.Require("encoding/xml")
-			s.FieldList = append(s.FieldList,
-				&Field{
-					Name: &Name{Value: "XMLName"},
-					Type: &BasicLit{Value: `xml.Name`},
-					Tags: map[string]string{
-						"xml": xmlNameTag(elm.name),
-					},
-				},
-			)
-		}
-
-		for _, attr := range typeDef.attributeUses {
-			f.Require("encoding/xml")
-			var attrType Expr
-			tags := xmlNameTag(attr.attributeDeclaration.name) + ",attr"
-			attrType = &BasicLit{Value: attr.attributeDeclaration.typeDefinition.goType}
-			if !attr.required {
-				tags += ",omitempty"
-				attrType = &PointerType{Elem: attrType}
-			}
-			s.FieldList = append(s.FieldList,
-				&Field{
-					Name: &Name{Value: makeTypeName(attr.attributeDeclaration.name)},
-					Type: attrType,
-					Tags: map[string]string{
-						"xml": tags,
-					},
-				},
-			)
-		}
-
-		p := typeDef.contentType.particle
-		if p != nil {
-			switch term := p.term.(type) {
-			case *modelGroup:
-				// sequence
-				if term.compositor == "sequence" {
-					for _, particle := range term.particles {
-						switch tt := particle.term.(type) {
-						case *elementDeclaration:
-							dt := createElementDeclType(f, tt, "")
-							if particle.maxOccurs > 1 {
-								dt = &SliceType{Elem: dt}
-							} else if particle.minOccurs == 0 {
-								dt = &PointerType{Elem: dt}
-							}
-							s.FieldList = append(s.FieldList,
-								&Field{
-									Name: &Name{Value: makeTypeName(tt.name)},
-									Type: dt,
-									Tags: map[string]string{
-										"xml": xmlNameTag(tt.name),
-									},
-								},
-							)
-						}
-					}
-				}
-			}
-		}
-
-		elmType = s
+		elmType = createComplexTypeDeclType(f, elm, typeName, typeDef)
 	}
 
 	return elmType
+}
+
+func createComplexTypeDeclType(f *File, elm *elementDeclaration, typeName string, typeDef *complexTypeDefinition) *StructType {
+	s := &StructType{
+		FieldList: []*Field{},
+	}
+
+	// If it's a root type definition then add an XMLName field.
+	if typeName != "" {
+		f.Require("encoding/xml")
+		s.FieldList = append(s.FieldList,
+			&Field{
+				Name: &Name{Value: "XMLName"},
+				Type: &BasicLit{Value: `xml.Name`},
+				Tags: map[string]string{
+					"xml": xmlNameTag(elm.name),
+				},
+			},
+		)
+	}
+
+	for _, attr := range typeDef.attributeUses {
+		f.Require("encoding/xml")
+		var attrType Expr
+		tags := xmlNameTag(attr.attributeDeclaration.name) + ",attr"
+		attrType = &BasicLit{Value: attr.attributeDeclaration.typeDefinition.goType}
+		if !attr.required {
+			tags += ",omitempty"
+			attrType = &PointerType{Elem: attrType}
+		}
+		s.FieldList = append(s.FieldList,
+			&Field{
+				Name: &Name{Value: makeTypeName(attr.attributeDeclaration.name)},
+				Type: attrType,
+				Tags: map[string]string{
+					"xml": tags,
+				},
+			},
+		)
+	}
+
+	p := typeDef.contentType.particle
+	if p != nil {
+		switch term := p.term.(type) {
+		case *modelGroup:
+			// sequence
+			if term.compositor == "sequence" {
+				s.FieldList = append(s.FieldList, createSequenceDecls(term, f)...)
+			}
+		}
+	}
+	return s
+}
+
+func createSequenceDecls(term *modelGroup, f *File) []*Field {
+	fields := make([]*Field, len(term.particles))
+	for _, particle := range term.particles {
+		switch tt := particle.term.(type) {
+		case *elementDeclaration:
+			dt := createElementDeclType(f, tt, "")
+			if particle.maxOccurs > 1 {
+				dt = &SliceType{Elem: dt}
+			} else if particle.minOccurs == 0 {
+				dt = &PointerType{Elem: dt}
+			}
+			fields = append(fields,
+				&Field{
+					Name: &Name{Value: makeTypeName(tt.name)},
+					Type: dt,
+					Tags: map[string]string{
+						"xml": xmlNameTag(tt.name),
+					},
+				},
+			)
+		}
+	}
+	return fields
 }
 
 func xmlNameTag(name xml.Name) string {
