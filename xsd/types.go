@@ -769,12 +769,17 @@ type ComplexType struct {
 	SimpleContent   *SimpleContent   `xml:"simpleContent"`
 	ComplexContent  *ComplexContent  `xml:"complexContent"`
 	Group           *Group           `xml:"group"`
-	All             *All             `xml:"all"`
-	Choice          *Choice          `xml:"choice"`
-	Sequence        *Sequence        `xml:"sequence"`
 	Attributes      []Attribute      `xml:"attribute"`
 	AttributeGroups []AttributeGroup `xml:"attributeGroup"`
 	Assert          *Assert          `xml:"assert"`
+
+	TypeDefParticleGroup
+}
+
+type TypeDefParticleGroup struct {
+	All      *All      `xml:"all"`
+	Choice   *Choice   `xml:"choice"`
+	Sequence *Sequence `xml:"sequence"`
 }
 
 type SimpleContent struct {
@@ -818,12 +823,11 @@ type ComplexContent struct {
 
 		Annotation      *Annotation      `xml:"annotation"`
 		Group           *Group           `xml:"group"`
-		All             *All             `xml:"all"`
-		Choice          *Choice          `xml:"choice"`
-		Sequence        *Sequence        `xml:"sequence"`
 		Attributes      []Attribute      `xml:"attribute"`
 		AttributeGroups []AttributeGroup `xml:"attributeGroup"`
 		Assert          *Assert          `xml:"assert"`
+
+		TypeDefParticleGroup
 	} `xml:"restriction"`
 	Extension *struct {
 		Base string `xml:"base,attr"`
@@ -831,12 +835,11 @@ type ComplexContent struct {
 
 		Annotation      *Annotation      `xml:"annotation"`
 		Group           *Group           `xml:"group"`
-		All             *All             `xml:"all"`
-		Choice          *Choice          `xml:"choice"`
-		Sequence        *Sequence        `xml:"sequence"`
 		Attributes      []Attribute      `xml:"attribute"`
 		AttributeGroups []AttributeGroup `xml:"attributeGroup"`
 		Assert          *Assert          `xml:"assert"`
+
+		TypeDefParticleGroup
 	} `xml:"extension"`
 }
 
@@ -857,7 +860,7 @@ type Notation struct {
 }
 
 //-----------------------------------------------------------------------------
-// typeDefParticle
+// TypeDefParticleGroup
 
 type (
 	Sequence struct {

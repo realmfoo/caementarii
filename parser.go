@@ -215,37 +215,29 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 
 		var explicitContent *particle
 		explicitContent = nil
+
+		var particleDefs xsd.TypeDefParticleGroup
+
 		if node.ComplexContent != nil {
+			if node.ComplexContent.Extension != nil {
+				particleDefs = node.ComplexContent.Extension.TypeDefParticleGroup
+			} else {
+				particleDefs = node.ComplexContent.Restriction.TypeDefParticleGroup
+			}
 		} else {
-			if node.Sequence != nil {
-				explicitContent, err = g.newSequenceParticle(s, node, node.Sequence)
-				if err != nil {
-					return nil, err
-				}
+			particleDefs = node.TypeDefParticleGroup
+		}
+
+		if particleDefs.Sequence != nil {
+			explicitContent, err = g.newSequenceParticle(s, node, particleDefs.Sequence)
+			if err != nil {
+				return nil, err
 			}
 		}
 
 		effectiveContent := explicitContent
 
-		var explicitContentType complexTypeContentType
-		if typeDef.derivationMethod == "restriction" {
-			if effectiveContent == nil {
-				explicitContentType = complexTypeContentType{
-					variety: "empty",
-				}
-			} else {
-				variety := "element-only"
-				if effectiveMixed {
-					variety = "mixed"
-				}
-				explicitContentType = complexTypeContentType{
-					variety:  variety,
-					particle: effectiveContent,
-				}
-			}
-		} else {
-			//
-		}
+		explicitContentType := getExplicitContentType(typeDef, effectiveContent, effectiveMixed, explicitContent)
 
 		var wildcardElement *openContent
 		wildcardElement = nil
@@ -271,6 +263,98 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	}
 
 	return &typeDef, nil
+}
+func getExplicitContentType(typeDef complexTypeDefinition, effectiveContent *particle, effectiveMixed bool, explicitContent *particle) complexTypeContentType {
+
+	// 4.1
+	if typeDef.derivationMethod == "restriction" {
+		return makeExplicitContentType4_1(effectiveContent, effectiveMixed)
+	}
+
+	// 4.2
+	var explicitContentType complexTypeContentType
+	switch baseDef := typeDef.baseTypeDefinition.(type) {
+	case *simpleTypeDefinition:
+		// 4.2.1
+		return makeExplicitContentType4_1(effectiveContent, effectiveMixed)
+
+	case *complexTypeDefinition:
+		if baseDef.contentType.variety == "empty" || baseDef.contentType.variety == "simple" {
+			// 4.2.1
+			return makeExplicitContentType4_1(effectiveContent, effectiveMixed)
+		} else if effectiveContent == nil { // variety is either "element-only", or "mixed"
+			// 4.2.2
+			explicitContentType = baseDef.contentType
+		} else {
+			// 4.2.3
+			var effectiveParticle *particle
+			baseParticle := baseDef.contentType.particle
+			if baseParticleModelGroup, ok := baseParticle.term.(*modelGroup); ok {
+				if baseParticleModelGroup.compositor == "all" && explicitContent == nil {
+					// 4.2.3.1
+					effectiveParticle = baseParticle
+				} else if baseParticleModelGroup.compositor == "all" && effectiveContent.term.(*modelGroup).compositor == "all" {
+					// 4.2.3.2
+					effectiveParticle = &particle{
+						minOccurs: effectiveContent.minOccurs,
+						maxOccurs: 1,
+						term: &modelGroup{
+							compositor: "all",
+							particles: append(
+								append([]*particle{}, baseParticleModelGroup.particles...),
+								effectiveContent.term.(*modelGroup).particles...,
+							),
+						},
+					}
+				}
+			}
+
+			// 4.2.3.3 otherwise
+			if effectiveParticle == nil {
+				effectiveParticle = &particle{
+					minOccurs: 1,
+					maxOccurs: 1,
+					term: &modelGroup{
+						compositor: "sequence",
+						particles: append(
+							append([]*particle{}, baseParticle.term.(*modelGroup).particles...),
+							effectiveContent.term.(*modelGroup).particles...,
+						),
+					},
+				}
+			}
+
+			variety := "element-only"
+			if effectiveMixed {
+				variety = "mixed"
+			}
+
+			explicitContentType = complexTypeContentType{
+				variety:  variety,
+				particle: effectiveParticle,
+			}
+
+		}
+	}
+	return explicitContentType
+}
+
+func makeExplicitContentType4_1(effectiveContent *particle, effectiveMixed bool) (explicitContentType complexTypeContentType) {
+	if effectiveContent == nil {
+		explicitContentType = complexTypeContentType{
+			variety: "empty",
+		}
+	} else {
+		variety := "element-only"
+		if effectiveMixed {
+			variety = "mixed"
+		}
+		explicitContentType = complexTypeContentType{
+			variety:  variety,
+			particle: effectiveContent,
+		}
+	}
+	return
 }
 
 func (g *Generator) newAttributeUse(s *schema, parent interface{}, node xsd.Attribute) (*attributeUse, error) {

@@ -146,7 +146,7 @@ func createComplexTypeDeclType(f *File, elm *elementDeclaration, typeName string
 }
 
 func createSequenceDecls(term *modelGroup, f *File) []*Field {
-	fields := make([]*Field, len(term.particles))
+	fields := make([]*Field, 0)
 	for _, particle := range term.particles {
 		switch tt := particle.term.(type) {
 		case *elementDeclaration:
