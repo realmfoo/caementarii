@@ -776,6 +776,24 @@ type ComplexType struct {
 	TypeDefParticleGroup
 }
 
+func (t ComplexType) GetAttributes() []Attribute {
+	if t.ComplexContent != nil {
+		if t.ComplexContent.Extension != nil {
+			return t.ComplexContent.Extension.Attributes
+		}
+		return t.ComplexContent.Restriction.Attributes
+	}
+
+	if t.SimpleContent != nil {
+		if t.SimpleContent.Extension != nil {
+			return t.SimpleContent.Extension.Attributes
+		}
+		return t.SimpleContent.Restriction.Attributes
+	}
+
+	return t.Attributes
+}
+
 type TypeDefParticleGroup struct {
 	All      *All      `xml:"all"`
 	Choice   *Choice   `xml:"choice"`

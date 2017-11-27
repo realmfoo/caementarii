@@ -250,24 +250,7 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	}
 
 	// attributes
-	var attrs []xsd.Attribute
-	if node.ComplexContent != nil {
-		if node.ComplexContent.Extension != nil {
-			attrs = node.ComplexContent.Extension.Attributes
-		} else {
-			attrs = node.ComplexContent.Restriction.Attributes
-		}
-	} else if node.SimpleContent != nil {
-		if node.SimpleContent.Extension != nil {
-			attrs = node.SimpleContent.Extension.Attributes
-		} else {
-			attrs = node.SimpleContent.Restriction.Attributes
-		}
-	} else {
-		attrs = node.Attributes
-	}
-
-	for _, attr := range attrs {
+	for _, attr := range node.GetAttributes() {
 		a, err := g.newAttributeUse(s, typeDef, attr)
 		if err != nil {
 			return nil, err
