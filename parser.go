@@ -250,20 +250,34 @@ func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.Comp
 	}
 
 	// attributes
+	var attrs []xsd.Attribute
 	if node.ComplexContent != nil {
-	} else if node.SimpleContent != nil {
-	} else {
-		for _, attr := range node.Attributes {
-			a, err := g.newAttributeUse(s, typeDef, attr)
-			if err != nil {
-				return nil, err
-			}
-			typeDef.attributeUses = append(typeDef.attributeUses, a)
+		if node.ComplexContent.Extension != nil {
+			attrs = node.ComplexContent.Extension.Attributes
+		} else {
+			attrs = node.ComplexContent.Restriction.Attributes
 		}
+	} else if node.SimpleContent != nil {
+		if node.SimpleContent.Extension != nil {
+			attrs = node.SimpleContent.Extension.Attributes
+		} else {
+			attrs = node.SimpleContent.Restriction.Attributes
+		}
+	} else {
+		attrs = node.Attributes
+	}
+
+	for _, attr := range attrs {
+		a, err := g.newAttributeUse(s, typeDef, attr)
+		if err != nil {
+			return nil, err
+		}
+		typeDef.attributeUses = append(typeDef.attributeUses, a)
 	}
 
 	return &typeDef, nil
 }
+
 func getExplicitContentType(typeDef complexTypeDefinition, effectiveContent *particle, effectiveMixed bool, explicitContent *particle) complexTypeContentType {
 
 	// 4.1
