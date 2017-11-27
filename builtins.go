@@ -12,6 +12,9 @@ var xmlTypes = map[xml.Name]TypeDefinition{
 	anyAtomicType.name:   anyAtomicType,
 	stringPrimitive.name: stringPrimitive,
 	anyURIPrimitive.name: anyURIPrimitive,
+
+	normalizedStringDataType.name: normalizedStringDataType,
+	tokenDataType.name:            tokenDataType,
 }
 
 var anyType = &complexTypeDefinition{
@@ -107,6 +110,46 @@ var anyURIPrimitive = newPrimitive(
 		&numericFacet{bool: false},
 	},
 )
+
+var normalizedStringDataType = &simpleTypeDefinition{
+	name:               xml.Name{Space: xmlNs, Local: "normalizedString"},
+	baseTypeDefinition: stringPrimitive,
+	final:              []string{},
+	variety:            "atomic",
+	facets: []ConstrainingFacet{
+		&whiteSpaceFacet{value: "replace"},
+	},
+	fundamentalFacets: []FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	goType: "string",
+}
+
+var tokenDataType = &simpleTypeDefinition{
+	name:               xml.Name{Space: xmlNs, Local: "token"},
+	baseTypeDefinition: normalizedStringDataType,
+	final:              []string{},
+	variety:            "atomic",
+	facets: []ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse"},
+	},
+	fundamentalFacets: []FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	goType: "string",
+}
 
 func init() {
 	stringPrimitive.goType = "string"
