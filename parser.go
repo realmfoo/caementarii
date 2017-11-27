@@ -72,6 +72,21 @@ func processImports(xs *xsd.Schema, g *Generator, schemas map[string]*schema) er
 	return nil
 }
 
+func (g *Generator) newSimpleType(s *schema, parent interface{}, node *xsd.XMLTopLevelSimpleType) (*simpleTypeDefinition, error) {
+	//var err error
+
+	typeDef := simpleTypeDefinition{}
+
+	// The ·actual value· of the name [attribute].
+	typeDef.name.Local = string(node.Name)
+	// The ·actual value· of the targetNamespace [attribute] of the <schema> ancestor element information item if present, otherwise ·absent·.
+	typeDef.name.Space = s.targetNamespace
+
+	s.typeDefinitions[typeDef.name] = &typeDef
+
+	return &typeDef, nil
+}
+
 func (g *Generator) newComplexType(s *schema, parent interface{}, node *xsd.ComplexType) (*complexTypeDefinition, error) {
 	var err error
 
@@ -437,7 +452,7 @@ func (g *Generator) newAttributeDeclaration(s *schema, parent interface{}, node 
 			return nil, err
 		}
 		if _, ok := typeDef.(*simpleTypeDefinition); !ok {
-			return nil, fmt.Errorf("Attribute type should be simple type")
+			return nil, fmt.Errorf("Attribute's type should be a simple type")
 		}
 		attr.typeDefinition = typeDef.(*simpleTypeDefinition)
 	} else {
@@ -513,8 +528,10 @@ func (g *Generator) resolveType(name xml.Name) (TypeDefinition, error) {
 		if s.targetNamespace == name.Space {
 			for _, top := range s.xsdSchema.SchemaTop {
 				switch t := top.(type) {
-				case xsd.SimpleType:
-					//
+				case xsd.XMLTopLevelSimpleType:
+					if string(t.Name) == name.Local {
+						return g.newSimpleType(s, nil, &t)
+					}
 				case xsd.ComplexType:
 					if t.Name == name.Local {
 						return g.newComplexType(s, nil, &t)

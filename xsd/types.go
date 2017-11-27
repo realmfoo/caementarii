@@ -228,7 +228,7 @@ func unmarshalSchemaTop(d *xml.Decoder, tok xml.Token) (interface{}, xml.Token, 
 			switch t.Name {
 
 			case xml.Name{Space: "http://www.w3.org/2001/XMLSchema", Local: "simpleType"}:
-				x := SimpleType{}
+				x := XMLTopLevelSimpleType{}
 				if err = d.DecodeElement(&x, &t); err != nil {
 					return nil, tok, fmt.Errorf("Failed to unmarshal <simpleType>: %s", err)
 				}

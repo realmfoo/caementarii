@@ -1,7 +1,11 @@
 <?xml version='1.0'?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="urn:caementarii:simple"
            elementFormDefault="qualified"
            targetNamespace="urn:caementarii:simple"
            version="1.0">
-    <xs:element name="lastname" type="xs:string"/>
+    <xs:simpleType name="stringtype">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:element name="lastname" type="tns:stringtype"/>
 </xs:schema>

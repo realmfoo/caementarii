@@ -76,7 +76,14 @@ func createElementDeclType(f *File, elm *elementDeclaration, typeName string) Ex
 
 	switch typeDef := elm.typeDefinition.(type) {
 	case *simpleTypeDefinition:
-		elmType = &Name{Value: typeDef.primitiveTypeDefinition.goType}
+		var goType string
+		if typeDef.primitiveTypeDefinition != nil {
+			goType = typeDef.primitiveTypeDefinition.goType
+		} else {
+			goType = "string"
+		}
+
+		elmType = &Name{Value: goType}
 
 		// If it's a root type then add a namespace variable?
 		if typeName != "" {
