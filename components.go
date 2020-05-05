@@ -427,6 +427,17 @@ type (
 
 		constrainingFacet
 	}
+
+	patternFacet struct {
+		// A sequence of Annotation components.
+		annotations []annotation
+		// One of {preserve, replace, collapse}. Required.
+		value string
+		// An xs:boolean value. Required.
+		fixed bool
+
+		constrainingFacet
+	}
 )
 
 type constrainingFacet struct{}

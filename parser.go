@@ -54,7 +54,7 @@ func processImports(xs *xsd.Schema, g *Generator, schemas map[string]*schema) er
 				if ns == "" {
 					ns = es.TargetNamespace
 				} else if es.TargetNamespace != ns {
-					return fmt.Errorf("Referenced XMLSchema has different targetNamespace. Expected {}, but found {}", ns, es.TargetNamespace)
+					return fmt.Errorf("Referenced XMLSchema has different targetNamespace. Expected %s, but found %s", ns, es.TargetNamespace)
 				}
 
 				if _, ok := schemas[ns]; ok {
@@ -503,7 +503,7 @@ func (g *Generator) newLocalElement(s *schema, node *xsd.Element) (*particle, er
 		} else {
 			p.maxOccurs, err = strconv.Atoi(*node.MaxOccurs)
 			if err != nil {
-				return nil, fmt.Errorf("Invalid maxOccurs attribute value: ", err)
+				return nil, fmt.Errorf("invalid maxOccurs attribute value: %v", err)
 			}
 		}
 	}

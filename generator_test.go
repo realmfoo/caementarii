@@ -29,7 +29,7 @@ func TestGenerator(t *testing.T) {
 		PkgName: "xmlschema",
 		ImportResolver: func(namespace string, schemaLocation string) (*xsd.Schema, error) {
 			if namespace != nsXml {
-				return nil, fmt.Errorf("Could not find a location of {}", namespace)
+				return nil, fmt.Errorf("could not find a location of %s", namespace)
 			}
 
 			data, err := ioutil.ReadFile("tests/xmlschema/xml.xsd")

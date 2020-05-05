@@ -12,5 +12,5 @@ func TestTypeDecl(t *testing.T) {
 	p := printer{output: buf}
 	p.print(d)
 	p.flush(_EOF)
-	assert.Equal(t, "type Lastname string", buf.String())
+	assert.Equal(t, "\ntype Lastname string", buf.String())
 }

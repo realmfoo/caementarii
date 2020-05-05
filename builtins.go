@@ -7,14 +7,19 @@ import (
 const xmlNs = "http://www.w3.org/2001/XMLSchema"
 
 var xmlTypes = map[xml.Name]TypeDefinition{
-	anyType.name:         anyType,
-	anySimpleType.name:   anySimpleType,
-	anyAtomicType.name:   anyAtomicType,
-	stringPrimitive.name: stringPrimitive,
-	anyURIPrimitive.name: anyURIPrimitive,
+	anyType.name:          anyType,
+	anySimpleType.name:    anySimpleType,
+	anyAtomicType.name:    anyAtomicType,
+	stringPrimitive.name:  stringPrimitive,
+	booleanPrimitive.name: booleanPrimitive,
+	anyURIPrimitive.name:  anyURIPrimitive,
+	qNamePrimitive.name:   qNamePrimitive,
 
 	normalizedStringDataType.name: normalizedStringDataType,
 	tokenDataType.name:            tokenDataType,
+	nameDataType.name:             nameDataType,
+	ncNameDataType.name:           ncNameDataType,
+	idDataType.name:               idDataType,
 }
 
 var anyType = &complexTypeDefinition{
@@ -53,7 +58,7 @@ var anyType = &complexTypeDefinition{
 		},
 		processContents: "lax",
 	},
-	final: []string{},
+	final:                   []string{},
 	prohibitedSubstitutions: []string{},
 	assertions:              []assertion{},
 	annotatedComponent: annotatedComponent{
@@ -98,8 +103,35 @@ var stringPrimitive = newPrimitive(
 	},
 )
 
+var booleanPrimitive = newPrimitive(
+	"boolean",
+	[]ConstrainingFacet{
+		&patternFacet{},
+		&whiteSpaceFacet{value: "preserve", fixed: false},
+	},
+	[]FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "finite"},
+		&numericFacet{bool: false},
+	},
+)
+
 var anyURIPrimitive = newPrimitive(
 	"anyURI",
+	[]ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse", fixed: true},
+	},
+	[]FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+)
+
+var qNamePrimitive = newPrimitive(
+	"QName",
 	[]ConstrainingFacet{
 		&whiteSpaceFacet{value: "collapse", fixed: true},
 	},
@@ -151,9 +183,71 @@ var tokenDataType = &simpleTypeDefinition{
 	goType: "string",
 }
 
+var nameDataType = &simpleTypeDefinition{
+	name:               xml.Name{Space: xmlNs, Local: "Name"},
+	baseTypeDefinition: tokenDataType,
+	final:              []string{},
+	variety:            "atomic",
+	facets: []ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse"},
+	},
+	fundamentalFacets: []FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	goType: "string",
+}
+
+var ncNameDataType = &simpleTypeDefinition{
+	name:               xml.Name{Space: xmlNs, Local: "NCName"},
+	baseTypeDefinition: nameDataType,
+	final:              []string{},
+	variety:            "atomic",
+	facets: []ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse"},
+	},
+	fundamentalFacets: []FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	goType: "string",
+}
+
+var idDataType = &simpleTypeDefinition{
+	name:               xml.Name{Space: xmlNs, Local: "ID"},
+	baseTypeDefinition: ncNameDataType,
+	final:              []string{},
+	variety:            "atomic",
+	facets: []ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse"},
+	},
+	fundamentalFacets: []FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	goType: "string",
+}
+
 func init() {
 	stringPrimitive.goType = "string"
 	anyURIPrimitive.goType = "string"
+	qNamePrimitive.goType = "string"
+	booleanPrimitive.goType = "bool"
 }
 
 // newPrimitive creates a new primitive type by a template.
