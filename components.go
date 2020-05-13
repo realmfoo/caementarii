@@ -428,6 +428,39 @@ type (
 		constrainingFacet
 	}
 
+	numFacet struct {
+		// A sequence of Annotation components.
+		annotations []annotation
+		// An xs:nonNegativeInteger value. Required.
+		value int
+		// An xs:boolean value. Required.
+		fixed bool
+
+		constrainingFacet
+	}
+
+	fractionDigitsFacet struct {
+		// A sequence of Annotation components.
+		annotations []annotation
+		// An xs:nonNegativeInteger value. Required.
+		value int
+		// An xs:boolean value. Required.
+		fixed bool
+
+		numFacet
+	}
+
+	minInclusiveFacet struct {
+		// A sequence of Annotation components.
+		annotations []annotation
+		// A value from the value space. Required.
+		value string
+		// An xs:boolean value. Required.
+		fixed bool
+
+		constrainingFacet
+	}
+
 	patternFacet struct {
 		// A sequence of Annotation components.
 		annotations []annotation

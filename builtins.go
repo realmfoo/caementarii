@@ -11,6 +11,7 @@ var xmlTypes = map[xml.Name]TypeDefinition{
 	anySimpleType.name:    anySimpleType,
 	anyAtomicType.name:    anyAtomicType,
 	stringPrimitive.name:  stringPrimitive,
+	decimalPrimitive.name: decimalPrimitive,
 	booleanPrimitive.name: booleanPrimitive,
 	anyURIPrimitive.name:  anyURIPrimitive,
 	qNamePrimitive.name:   qNamePrimitive,
@@ -20,6 +21,9 @@ var xmlTypes = map[xml.Name]TypeDefinition{
 	nameDataType.name:             nameDataType,
 	ncNameDataType.name:           ncNameDataType,
 	idDataType.name:               idDataType,
+	integerType.name:              integerType,
+	nonNegativeIntegerType.name:   nonNegativeIntegerType,
+	positiveIntegerType.name:      positiveIntegerType,
 }
 
 var anyType = &complexTypeDefinition{
@@ -102,6 +106,84 @@ var stringPrimitive = newPrimitive(
 		&numericFacet{bool: false},
 	},
 )
+
+var decimalPrimitive = newPrimitive(
+	"decimal",
+	[]ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse", fixed: false},
+	},
+	[]FundamentalFacet{
+		&orderedFacet{string: "total"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: true},
+	},
+)
+
+var integerType = &simpleTypeDefinition{
+	name:               xml.Name{Space: xmlNs, Local: "integer"},
+	baseTypeDefinition: decimalPrimitive,
+	final:              []string{},
+	variety:            "atomic",
+	facets: []ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse", fixed: true},
+		&fractionDigitsFacet{value: 0, fixed: true},
+	},
+	fundamentalFacets: []FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	goType: "int",
+}
+
+var nonNegativeIntegerType = &simpleTypeDefinition{
+	name:               xml.Name{Space: xmlNs, Local: "nonNegativeInteger"},
+	baseTypeDefinition: integerType,
+	final:              []string{},
+	variety:            "atomic",
+	facets: []ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse", fixed: true},
+		&fractionDigitsFacet{value: 0, fixed: true},
+		&minInclusiveFacet{value: "0"},
+	},
+	fundamentalFacets: []FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	goType: "uint",
+}
+
+var positiveIntegerType = &simpleTypeDefinition{
+	name:               xml.Name{Space: xmlNs, Local: "positiveInteger"},
+	baseTypeDefinition: integerType,
+	final:              []string{},
+	variety:            "atomic",
+	facets: []ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse", fixed: true},
+		&fractionDigitsFacet{value: 0, fixed: true},
+		&minInclusiveFacet{value: "1"},
+	},
+	fundamentalFacets: []FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	goType: "uint",
+}
 
 var booleanPrimitive = newPrimitive(
 	"boolean",
@@ -245,6 +327,7 @@ var idDataType = &simpleTypeDefinition{
 
 func init() {
 	stringPrimitive.goType = "string"
+	decimalPrimitive.goType = "float64"
 	anyURIPrimitive.goType = "string"
 	qNamePrimitive.goType = "string"
 	booleanPrimitive.goType = "bool"
