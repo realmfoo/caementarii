@@ -73,7 +73,7 @@ func processImports(xs *xsd.Schema, g *Generator, schemas map[string]*schema) er
 }
 
 func (g *Generator) newSimpleType(s *schema, parent interface{}, node *xsd.XMLTopLevelSimpleType) (*simpleTypeDefinition, error) {
-	//var err error
+	var err error
 
 	typeDef := simpleTypeDefinition{}
 
@@ -81,6 +81,39 @@ func (g *Generator) newSimpleType(s *schema, parent interface{}, node *xsd.XMLTo
 	typeDef.name.Local = string(node.Name)
 	// The ·actual value· of the targetNamespace [attribute] of the <schema> ancestor element information item if present, otherwise ·absent·.
 	typeDef.name.Space = s.targetNamespace
+
+	if node.Restriction != nil {
+		// The type definition ·resolved· to by the ·actual value· of the base [attribute] on the <restriction> or
+		// <extension> element appearing as a child of <simpleContent>, if present, otherwise the type definition
+		// corresponding to the <simpleType> among the [children] of <restriction>.
+		typeDef.baseTypeDefinition, err = g.resolveType(s.resolveQName(node.Restriction.Base))
+		if err != nil {
+			return nil, err
+		}
+		typeDef.variety = typeDef.baseTypeDefinition.(*simpleTypeDefinition).variety
+	} else if node.List != nil {
+		typeDef.baseTypeDefinition = anySimpleType
+		if node.List.ItemType != "" {
+			var itemTypeDefinition TypeDefinition
+			itemTypeDefinition, err = g.resolveType(s.resolveQName(node.List.ItemType))
+			if err != nil {
+				return nil, err
+			}
+			typeDef.itemTypeDefinition = itemTypeDefinition.(*simpleTypeDefinition)
+		} else {
+			var itemTypeDefinition TypeDefinition
+			itemTypeDefinition, err = g.resolveType(s.resolveQName(node.List.SimpleType.Union.MemberTypes[0]))
+			if err != nil {
+				return nil, err
+			}
+			typeDef.itemTypeDefinition = itemTypeDefinition.(*simpleTypeDefinition)
+		}
+		typeDef.goType = "[]" + typeDef.itemTypeDefinition.goType
+		typeDef.variety = "list"
+	} else if node.Union != nil {
+		typeDef.baseTypeDefinition = anySimpleType
+		typeDef.variety = "union"
+	}
 
 	s.typeDefinitions[typeDef.name] = &typeDef
 

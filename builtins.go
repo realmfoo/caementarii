@@ -18,6 +18,7 @@ var xmlTypes = map[xml.Name]TypeDefinition{
 
 	normalizedStringDataType.name: normalizedStringDataType,
 	tokenDataType.name:            tokenDataType,
+	nmTokenDataType.name:          nmTokenDataType,
 	nameDataType.name:             nameDataType,
 	ncNameDataType.name:           ncNameDataType,
 	idDataType.name:               idDataType,
@@ -251,6 +252,27 @@ var tokenDataType = &simpleTypeDefinition{
 	final:              []string{},
 	variety:            "atomic",
 	facets: []ConstrainingFacet{
+		&whiteSpaceFacet{value: "collapse"},
+	},
+	fundamentalFacets: []FundamentalFacet{
+		&orderedFacet{string: "false"},
+		&boundedFacet{bool: false},
+		&cardinalityFacet{string: "countably infinite"},
+		&numericFacet{bool: false},
+	},
+	annotatedComponent: annotatedComponent{
+		annotations: []annotation{},
+	},
+	goType: "string",
+}
+
+var nmTokenDataType = &simpleTypeDefinition{
+	name:               xml.Name{Space: xmlNs, Local: "NMTOKEN"},
+	baseTypeDefinition: tokenDataType,
+	final:              []string{},
+	variety:            "atomic",
+	facets: []ConstrainingFacet{
+		&patternFacet{value: "\\c+"},
 		&whiteSpaceFacet{value: "collapse"},
 	},
 	fundamentalFacets: []FundamentalFacet{
