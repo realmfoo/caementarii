@@ -6,12 +6,12 @@ import (
 	"github.com/realmfoo/caementarii"
 	"github.com/realmfoo/caementarii/xsd"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func TestSimple01(t *testing.T) {
-	data, err := ioutil.ReadFile("simple01.xsd")
+	data, err := os.ReadFile("simple01.xsd")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestSimple01(t *testing.T) {
 	}
 	g.Generate(&s, buf)
 
-	expected, _ := ioutil.ReadFile("simple01.go")
+	expected, _ := os.ReadFile("simple01.go")
 	assert.Equal(t, string(expected), buf.String())
 }
 

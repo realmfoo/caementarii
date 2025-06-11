@@ -5,13 +5,12 @@ import (
 	"encoding/xml"
 	"fmt"
 	"github.com/realmfoo/caementarii/xsd"
-	"io/ioutil"
 	"os"
 	"testing"
 )
 
 func TestGenerator(t *testing.T) {
-	data, err := ioutil.ReadFile("tests/xmlschema/XMLSchema.xsd")
+	data, err := os.ReadFile("tests/xmlschema/XMLSchema.xsd")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +31,7 @@ func TestGenerator(t *testing.T) {
 				return nil, fmt.Errorf("could not find a location of %s", namespace)
 			}
 
-			data, err := ioutil.ReadFile("tests/xmlschema/xml.xsd")
+			data, err := os.ReadFile("tests/xmlschema/xml.xsd")
 			if err != nil {
 				return nil, err
 			}

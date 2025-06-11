@@ -4,12 +4,12 @@ import (
 	"encoding/xml"
 	"fmt"
 	"github.com/realmfoo/caementarii/xsd"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func TestUnmarshal(t *testing.T) {
-	data, err := ioutil.ReadFile("XMLSchema.xsd")
+	data, err := os.ReadFile("XMLSchema.xsd")
 	if err != nil {
 		t.Fatal(err)
 	}
